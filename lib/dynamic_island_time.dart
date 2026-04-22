@@ -86,28 +86,28 @@ class _DynamicIslandTimeState extends State<DynamicIslandTime> {
               ClipPath(
                 clipper: mainAppController.isDynamicIsland ? ConcaveCornersClipper() : null,
                 child: Container(
+                  padding: EdgeInsets.only(right: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 22 : 0),
+                  alignment: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? AlignmentGeometry.centerRight : AlignmentGeometry.center,
                   decoration: BoxDecoration(
                     color: mainAppController.isDynamicIsland ? Colors.black : Colors.transparent,
                   ),
-                  child: Center(
-                    child: AnimatedScale(
-                      duration: const Duration(milliseconds: 180),
-                      curve: Curves.easeInOut,
-                      scale: mainAppController.stateApp == IslandState.expanded ? 1.3 : 1,
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        switchInCurve: Curves.easeOut,
-                        switchOutCurve: Curves.easeOut,
-                        layoutBuilder: (currentChild, previousChildren) => Stack(
-                          children: [
-                            ...previousChildren,
-                            ?currentChild,
-                          ],
-                        ),
-                        child: mainAppController.stateApp == IslandState.expanded
-                            ? _ExpandedView(time: _time)
-                            : _CollapsedView(time: _time),
+                  child: AnimatedScale(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeInOut,
+                    scale: mainAppController.stateApp == IslandState.expanded ? 1.3 : 1,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeOut,
+                      layoutBuilder: (currentChild, previousChildren) => Stack(
+                        children: [
+                          ...previousChildren,
+                          ?currentChild,
+                        ],
                       ),
+                      child: mainAppController.stateApp == IslandState.expanded
+                          ? _ExpandedView(time: _time)
+                          : _CollapsedView(time: _time),
                     ),
                   ),
                 ),
