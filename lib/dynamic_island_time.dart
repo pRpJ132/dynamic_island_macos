@@ -5,6 +5,42 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+class ConcaveCornersClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    const double r = 9;
+    const double rb = 9;
+    Path path = Path();
+
+    path.moveTo(0, 0);
+    path.quadraticBezierTo(r, 0, r, r);
+
+    path.lineTo(r, size.height - rb);
+    path.arcToPoint(
+      Offset(r + rb, size.height),
+      radius: Radius.circular(rb),
+      clockwise: false,
+    );
+
+    path.lineTo(size.width - r - rb, size.height);
+    path.arcToPoint(
+      Offset(size.width - r, size.height - rb),
+      radius: Radius.circular(rb),
+      clockwise: false,
+    );
+
+    path.lineTo(size.width - r, r);
+    path.quadraticBezierTo(size.width - r, 0, size.width, 0);
+
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
+}
+
+
 class DynamicIslandTime extends StatefulWidget {
   const DynamicIslandTime({super.key});
 
@@ -42,36 +78,41 @@ class _DynamicIslandTimeState extends State<DynamicIslandTime> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Center(
-        child: Consumer<MainAppController>(
-          builder: (_, mainAppController, _) =>
-            Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: mainAppController.isDynamicIsland ? Colors.black : Colors.transparent,
-              ),
-              child: Center(
-                child: AnimatedScale(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeInOut,
-                  scale: mainAppController.stateApp == IslandState.expanded ? 1.3 : 1,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 300),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeOut,
-                    layoutBuilder: (currentChild, previousChildren) => Stack(
-                      children: [
-                        ...previousChildren,
-                        ?currentChild,
-                      ],
+      body: Padding(
+        padding: EdgeInsetsGeometry.symmetric(horizontal: 9),
+        child: Center(
+          child: Consumer<MainAppController>(
+            builder: (_, mainAppController, _) =>
+              ClipPath(
+                clipper: mainAppController.isDynamicIsland ? ConcaveCornersClipper() : null,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: mainAppController.isDynamicIsland ? Colors.black : Colors.transparent,
+                  ),
+                  child: Center(
+                    child: AnimatedScale(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeInOut,
+                      scale: mainAppController.stateApp == IslandState.expanded ? 1.3 : 1,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 300),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeOut,
+                        layoutBuilder: (currentChild, previousChildren) => Stack(
+                          children: [
+                            ...previousChildren,
+                            ?currentChild,
+                          ],
+                        ),
+                        child: mainAppController.stateApp == IslandState.expanded
+                            ? _ExpandedView(time: _time)
+                            : _CollapsedView(time: _time),
+                      ),
                     ),
-                    child: mainAppController.stateApp == IslandState.expanded
-                        ? _ExpandedView(time: _time)
-                        : _CollapsedView(time: _time),
                   ),
                 ),
               ),
-            ),
+          ),
         ),
       ),
     );

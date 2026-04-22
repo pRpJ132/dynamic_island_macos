@@ -1,5 +1,6 @@
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/dynamic_island_main.dart';
+import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:provider/provider.dart';
@@ -11,7 +12,7 @@ void main() async {
   await hotKeyManager.unregisterAll();
 
   await windowManager.waitUntilReadyToShow(WindowOptions(
-    size: Size(160, 50),
+    size: SizeWindowObject().collapsedSize,
     center: true,
   ), () {});
 

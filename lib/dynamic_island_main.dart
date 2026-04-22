@@ -16,7 +16,8 @@ class DynamicIslandMain extends StatefulWidget {
 
 class _DynamicIslandMainState extends State<DynamicIslandMain> {
   static const notchChannel = MethodChannel('window/notch');
-  late MainAppController mainAppController;
+  static const _channel = MethodChannel('window/animation');
+  late MainAppController _mainAppController;
 
   void initKeyBind(BuildContext context) async {
     await hotKeyManager.register(
@@ -25,10 +26,10 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         modifiers: [HotKeyModifier.meta],
       ),
       keyDownHandler: (_) async {
-        mainAppController.clickThrough = !mainAppController.clickThrough;
-        if (mainAppController.isDynamicIsland) return;
+        _mainAppController.clickThrough = !_mainAppController.clickThrough;
+        if (_mainAppController.isDynamicIsland) return;
         await windowManager.setIgnoreMouseEvents(
-          mainAppController.clickThrough,
+          _mainAppController.clickThrough,
           forward: true,
         );
       },
@@ -40,13 +41,13 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         modifiers: [HotKeyModifier.meta],
       ),
       keyDownHandler: (_) async {
-        if (mainAppController.hideApp) {
+        if (_mainAppController.hideApp) {
           await windowManager.show();
           await windowManager.focus();
-          mainAppController.hideApp = false;
+          _mainAppController.hideApp = false;
         } else {
           await windowManager.hide();
-          mainAppController.hideApp = true;
+          _mainAppController.hideApp = true;
         }
       },
     );
@@ -69,19 +70,19 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       ),
       keyDownHandler: (_) async {
         try {
-          mainAppController.isDynamicIsland = !mainAppController.isDynamicIsland;
-          if (mainAppController.isDynamicIsland) {
+          _mainAppController.isDynamicIsland = !_mainAppController.isDynamicIsland;
+          if (_mainAppController.isDynamicIsland) {
             await windowManager.setIgnoreMouseEvents(
               false,
               forward: true,
             );
           } else {
             await windowManager.setIgnoreMouseEvents(
-              mainAppController.clickThrough,
+              _mainAppController.clickThrough,
               forward: true,
             );
           }
-          mainAppController.stateApp = IslandState.collapsed;
+          _mainAppController.stateApp = IslandState.collapsed;
           await notchChannel.invokeMethod('moveToNotch');
         } catch (e) {
           print('Notch error: $e');
@@ -93,7 +94,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   @override
   void initState() {
     super.initState();
-    mainAppController = context.read<MainAppController>();
+    _mainAppController = context.read<MainAppController>();
     initKeyBind(context);
   }
   
@@ -102,7 +103,30 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return GestureDetector(
-        onPanStart: (_) async => mainAppController.isDynamicIsland ? null : windowManager.startDragging(),
+        onPanStart: (_) async => mainAppController.isDynamicIsland ? windowManager.startDragging() : windowManager.startDragging(),
+        onTap: () async {
+          if (!mainAppController.isDynamicIsland) {
+            try {
+              if (mainAppController.stateApp == IslandState.expanded) {
+                mainAppController.stateApp = IslandState.collapsed;
+                await _channel.invokeMethod('resize', {
+                  'width': mainAppController.sizeWindow.collapsedSize.width,
+                  'height': mainAppController.sizeWindow.collapsedSize.height,
+                  'duration': 0.2,
+                  'curve': 'easeInOut',
+                });
+              } else {
+                mainAppController.stateApp = IslandState.expanded;
+                await _channel.invokeMethod('resize', {
+                  'width': mainAppController.sizeWindow.expandedSize.width,
+                  'height': mainAppController.sizeWindow.expandedSize.height,
+                  'duration': 0.2,
+                  'curve': 'easeInOut',
+                });
+              }
+            } catch (_) {}
+          }
+        },
         child: DynamicIslandTime(),
       );}
     );

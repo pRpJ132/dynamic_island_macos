@@ -210,14 +210,14 @@ class MainFlutterWindow: NSWindow {
             oldFrame = newFrame
         }
 
-        let x = screenFrame.origin.x + (screenFrame.width - 180) / 2
-        let y = screenFrame.origin.y + screenFrame.height - 31
+        let x = screenFrame.origin.x + (screenFrame.width - 420) / 2
+        let y = screenFrame.origin.y + screenFrame.height - 32
 
         let newFrame = NSRect(
             x: x,
             y: y,
-            width: 180,
-            height: 31
+            width: 420,
+            height: 32
         )
 
         self.styleMask = [.borderless, .fullSizeContentView]

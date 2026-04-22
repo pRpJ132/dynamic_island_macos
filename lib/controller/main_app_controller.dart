@@ -13,6 +13,7 @@ class MainAppController extends ChangeNotifier {
   SizeWindowObject sizeWindow = SizeWindowObject();
   Timer? _hoverPollTimer;
 
+
   IslandState get stateApp => _stateApp;
   set stateApp(IslandState newState) {
     _stateApp = newState;
