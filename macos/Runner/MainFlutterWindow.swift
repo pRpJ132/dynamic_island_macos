@@ -36,10 +36,9 @@ class MainFlutterWindow: NSWindow {
         let blurView = NSVisualEffectView(frame: self.contentView!.bounds)
         blurView.autoresizingMask = [.width, .height]
         blurView.blendingMode = .behindWindow
-        blurView.material = .fullScreenUI
+        blurView.material = .hudWindow
         blurView.state = .active
         blurView.wantsLayer = true
-
         self.contentView?.addSubview(blurView, positioned: .below, relativeTo: nil)
 
         RegisterGeneratedPlugins(registry: flutterViewController)
@@ -53,6 +52,18 @@ class MainFlutterWindow: NSWindow {
             guard let self = self else { return }
 
             switch call.method {
+
+            case "isMouseInsideWindow":
+                let mouseLocation = NSEvent.mouseLocation
+                let windowFrame = self.frame
+
+                let inside =
+                    mouseLocation.x >= windowFrame.minX &&
+                    mouseLocation.x <= windowFrame.maxX &&
+                    mouseLocation.y >= windowFrame.minY &&
+                    mouseLocation.y <= windowFrame.maxY
+
+                result(inside)
             case "resize":
                 guard
                     let args = call.arguments as? [String: Any],
@@ -67,7 +78,6 @@ class MainFlutterWindow: NSWindow {
 
                 self.animateResize(width: width, height: height, duration: duration, curve: curve)
                 result(true)
-
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -95,6 +105,10 @@ class MainFlutterWindow: NSWindow {
         super.awakeFromNib()
     }
 
+    private var isDynamicIsland = false
+    private var islandAnchorY: CGFloat?
+    private var islandAnchorX: CGFloat?
+
     private func animateResize(
         width: CGFloat,
         height: CGFloat,
@@ -104,12 +118,29 @@ class MainFlutterWindow: NSWindow {
         let oldFrame = self.frame
         let newSize = NSSize(width: width, height: height)
 
-        let centerX = oldFrame.midX
-        let centerY = oldFrame.midY
+        if isDynamicIsland {
+            if islandAnchorX == nil {
+                islandAnchorX = oldFrame.midX
+            }
+            if islandAnchorY == nil {
+                islandAnchorY = oldFrame.maxY
+            }
+        }
+
+        let centerX = isDynamicIsland ? islandAnchorX! : oldFrame.midX
+
+        let newY: CGFloat
+
+        if isDynamicIsland {
+            newY = islandAnchorY! - newSize.height
+        } else {
+            let centerY = oldFrame.midY
+            newY = centerY - newSize.height / 2
+        }
 
         var newFrame = NSRect(
             x: centerX - newSize.width / 2,
-            y: centerY - newSize.height / 2,
+            y: newY,
             width: newSize.width,
             height: newSize.height
         )
@@ -118,9 +149,6 @@ class MainFlutterWindow: NSWindow {
             newFrame.origin.x = max(screenFrame.minX,
                                     min(newFrame.origin.x,
                                         screenFrame.maxX - newSize.width))
-            newFrame.origin.y = max(screenFrame.minY,
-                                    min(newFrame.origin.y,
-                                        screenFrame.maxY - newSize.height))
         }
 
         NSAnimationContext.runAnimationGroup { context in
@@ -142,7 +170,6 @@ class MainFlutterWindow: NSWindow {
     }
 
     private var oldFrame: NSRect?
-    private var isDynamicIsland = false
 
     private func moveToNotch() {
         guard let screen = self.screen else { return }
@@ -183,26 +210,34 @@ class MainFlutterWindow: NSWindow {
             oldFrame = newFrame
         }
 
-        let x = screenFrame.origin.x + (screenFrame.width - windowSize.width) / 2
-        let y = screenFrame.origin.y + screenFrame.height - windowSize.height
+        let x = screenFrame.origin.x + (screenFrame.width - 180) / 2
+        let y = screenFrame.origin.y + screenFrame.height - 31
 
         let newFrame = NSRect(
             x: x,
             y: y,
-            width: windowSize.width,
-            height: windowSize.height
+            width: 180,
+            height: 31
         )
 
         self.styleMask = [.borderless, .fullSizeContentView]
+        self.contentView?.subviews
+            .filter { $0 is NSVisualEffectView }
+            .forEach { $0.removeFromSuperview() }
         self.setFrame(newFrame, display: true)
     }
 
     private func restoreWindow() {
         guard let frame = oldFrame else { return }
-
         self.styleMask = [.titled, .fullSizeContentView]
         self.setFrame(frame, display: true)
-
+        let blurView = NSVisualEffectView(frame: self.contentView!.bounds)
+        blurView.autoresizingMask = [.width, .height]
+        blurView.blendingMode = .behindWindow
+        blurView.material = .fullScreenUI
+        blurView.state = .active
+        blurView.wantsLayer = true
+        self.contentView?.addSubview(blurView, positioned: .below, relativeTo: nil)
         oldFrame = nil
     }
 }

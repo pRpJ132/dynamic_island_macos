@@ -1,23 +1,23 @@
 import Cocoa
 import FlutterMacOS
 
-extension NSScreen {
-    static var buildin: NSScreen? {
-        NSScreen.screens.first {
-            guard let id = $0.deviceDescription[
-                NSDeviceDescriptionKey("NSScreenNumber")
-            ] as? CGDirectDisplayID else { return false }
-            return CGDisplayIsBuiltin(id) != 0
-        }
-    }
+// extension NSScreen {
+//     static var buildin: NSScreen? {
+//         NSScreen.screens.first {
+//             guard let id = $0.deviceDescription[
+//                 NSDeviceDescriptionKey("NSScreenNumber")
+//             ] as? CGDirectDisplayID else { return false }
+//             return CGDisplayIsBuiltin(id) != 0
+//         }
+//     }
 
-    var notchSize: CGSize {
-        guard #available(macOS 12.0, *) else { return .zero }
-        let insets = safeAreaInsets
-        guard insets.top > 0 else { return .zero }
-        return CGSize(width: 162, height: insets.top)
-    }
-}
+//     var notchSize: CGSize {
+//         guard #available(macOS 12.0, *) else { return .zero }
+//         let insets = safeAreaInsets
+//         guard insets.top > 0 else { return .zero }
+//         return CGSize(width: 162, height: insets.top)
+//     }
+// }
 
 @main
 class AppDelegate: FlutterAppDelegate {
