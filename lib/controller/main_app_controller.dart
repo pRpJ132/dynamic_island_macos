@@ -8,18 +8,24 @@ enum IslandState { collapsed, expanded }
 class MainAppController extends ChangeNotifier {
   bool hideApp = false;
   bool clickThrough = false;
-  bool _isDynamicIsland = false;
-  IslandState _stateApp = IslandState.collapsed;
   SizeWindowObject sizeWindow = SizeWindowObject();
   Timer? _hoverPollTimer;
 
+  bool _animatedChangeDynamicIsland = false;
+  bool get animatedChangeDynamicIsland => _animatedChangeDynamicIsland;
+  set animatedChangeDynamicIsland(bool v) {
+    _animatedChangeDynamicIsland = v;
+    notifyListeners();
+  }
 
+  IslandState _stateApp = IslandState.collapsed;
   IslandState get stateApp => _stateApp;
   set stateApp(IslandState newState) {
     _stateApp = newState;
     notifyListeners();
   }
 
+  bool _isDynamicIsland = false;
   bool get isDynamicIsland => _isDynamicIsland;
   set isDynamicIsland(bool v) {
     if (v) {
@@ -47,11 +53,16 @@ class MainAppController extends ChangeNotifier {
   }
   IslandState _targetState = IslandState.collapsed;
   bool _isAnimating = false;
+  bool get isAnimating => _isAnimating;
+  set isAnimating(bool v) {
+    _isAnimating = v;
+    notifyListeners();
+  }
   bool _mouseInside = false;
   static const _channel = MethodChannel('window/animation');
 
   Future<void> _pollMousePosition() async {
-    if (!isDynamicIsland) return;
+    if (!isDynamicIsland || _isAnimating || _animatedChangeDynamicIsland) return;
     bool inside = false;
     try {
       inside = await _channel.invokeMethod<bool>('isMouseInsideWindow') ?? false;
@@ -65,24 +76,50 @@ class MainAppController extends ChangeNotifier {
   }
 
   void _requestState(IslandState newState) {
-    if (!isDynamicIsland) return;
     _targetState = newState;
-    _applyTargetState();
-  }
-
-  Future<void> _applyTargetState() async {
-    if (_isAnimating) return;
+    if (isAnimating) return;
     if (stateApp == _targetState) return;
-    if (!isDynamicIsland) return;
 
-    _isAnimating = true;
+    isAnimating = true;
     final animatingTo = _targetState;
 
     stateApp = animatingTo;
 
     final size = animatingTo == IslandState.expanded
-        ? sizeWindow.expandedSizeBaseDynamicIsland
-        : sizeWindow.collapsedSizeBaseDynamicIsland;
+        ? isDynamicIsland ? sizeWindow.expandedSizeBaseDynamicIsland : sizeWindow.expandedSize
+        : isDynamicIsland ? sizeWindow.collapsedSizeBaseDynamicIsland : sizeWindow.collapsedSize;
+
+    try {
+      _channel.invokeMethod('resize', {
+        'width': size.width,
+        'height': size.height,
+        'duration': 0.2,
+        'curve': 'easeInOut',
+      });
+    } catch (_) {}
+
+    isAnimating = false;
+
+    final correctTarget = _mouseInside ? IslandState.expanded : IslandState.collapsed;
+    if (stateApp != correctTarget && isDynamicIsland) {
+      _targetState = correctTarget;
+      _requestState(_targetState);
+    }
+  }
+
+  Future<void> requestState(IslandState newState) async {
+    _targetState = newState;
+    if (isAnimating) return;
+    if (stateApp == _targetState) return;
+
+    isAnimating = true;
+    final animatingTo = _targetState;
+
+    stateApp = animatingTo;
+
+    final size = animatingTo == IslandState.expanded
+        ? isDynamicIsland ? sizeWindow.expandedSizeBaseDynamicIsland : sizeWindow.expandedSize
+        : isDynamicIsland ? sizeWindow.collapsedSizeBaseDynamicIsland : sizeWindow.collapsedSize;
 
     try {
       await _channel.invokeMethod('resize', {
@@ -93,13 +130,6 @@ class MainAppController extends ChangeNotifier {
       });
     } catch (_) {}
 
-    _isAnimating = false;
-
-    final correctTarget =
-        _mouseInside ? IslandState.expanded : IslandState.collapsed;
-    if (stateApp != correctTarget) {
-      _targetState = correctTarget;
-      _applyTargetState();
-    }
+    isAnimating = false;
   }
 }

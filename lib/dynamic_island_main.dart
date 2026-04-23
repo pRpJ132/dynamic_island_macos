@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/dynamic_island_time.dart';
@@ -16,7 +17,6 @@ class DynamicIslandMain extends StatefulWidget {
 
 class _DynamicIslandMainState extends State<DynamicIslandMain> {
   static const notchChannel = MethodChannel('window/notch');
-  static const _channel = MethodChannel('window/animation');
   late MainAppController _mainAppController;
 
   void initKeyBind(BuildContext context) async {
@@ -70,20 +70,18 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       ),
       keyDownHandler: (_) async {
         try {
-          _mainAppController.isDynamicIsland = !_mainAppController.isDynamicIsland;
-          if (_mainAppController.isDynamicIsland) {
-            await windowManager.setIgnoreMouseEvents(
-              false,
-              forward: true,
-            );
-          } else {
-            await windowManager.setIgnoreMouseEvents(
-              _mainAppController.clickThrough,
-              forward: true,
-            );
-          }
-          _mainAppController.stateApp = IslandState.collapsed;
+          if (_mainAppController.isAnimating || _mainAppController.animatedChangeDynamicIsland) return;
+          _mainAppController.animatedChangeDynamicIsland = true;
+          await _mainAppController.requestState(IslandState.collapsed);
+          Future.delayed(const Duration(milliseconds: 550), () {
+            _mainAppController.isDynamicIsland = !_mainAppController.isDynamicIsland;
+          });
           await notchChannel.invokeMethod('moveToNotch');
+          await windowManager.setIgnoreMouseEvents(
+            _mainAppController.isDynamicIsland ? false : _mainAppController.clickThrough,
+            forward: true,
+          );
+          _mainAppController.animatedChangeDynamicIsland = false;
         } catch (e) {
           print('Notch error: $e');
         }
@@ -103,27 +101,15 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return GestureDetector(
-        onPanStart: (_) async => mainAppController.isDynamicIsland ? windowManager.startDragging() : windowManager.startDragging(),
-        onTap: () async {
+        onPanStart: (_) async => (
+          mainAppController.isDynamicIsland || 
+          mainAppController.isAnimating || 
+          mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
+        onTap: () {
           if (!mainAppController.isDynamicIsland) {
+            if (_mainAppController.isAnimating || _mainAppController.animatedChangeDynamicIsland) return;
             try {
-              if (mainAppController.stateApp == IslandState.expanded) {
-                mainAppController.stateApp = IslandState.collapsed;
-                await _channel.invokeMethod('resize', {
-                  'width': mainAppController.sizeWindow.collapsedSize.width,
-                  'height': mainAppController.sizeWindow.collapsedSize.height,
-                  'duration': 0.2,
-                  'curve': 'easeInOut',
-                });
-              } else {
-                mainAppController.stateApp = IslandState.expanded;
-                await _channel.invokeMethod('resize', {
-                  'width': mainAppController.sizeWindow.expandedSize.width,
-                  'height': mainAppController.sizeWindow.expandedSize.height,
-                  'duration': 0.2,
-                  'curve': 'easeInOut',
-                });
-              }
+              mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
             } catch (_) {}
           }
         },

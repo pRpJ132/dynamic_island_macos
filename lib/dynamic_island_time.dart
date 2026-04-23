@@ -85,7 +85,9 @@ class _DynamicIslandTimeState extends State<DynamicIslandTime> {
             builder: (_, mainAppController, _) =>
               ClipPath(
                 clipper: mainAppController.isDynamicIsland ? ConcaveCornersClipper() : null,
-                child: Container(
+                child: AnimatedContainer(
+                  duration: Duration(milliseconds: 350),
+                  curve: Curves.easeOut,
                   padding: EdgeInsets.only(right: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 22 : 0),
                   alignment: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? AlignmentGeometry.centerRight : AlignmentGeometry.center,
                   decoration: BoxDecoration(
@@ -127,7 +129,8 @@ class _ExpandedView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       key: const ValueKey("expanded"),
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Flexible(
           child: const Text(

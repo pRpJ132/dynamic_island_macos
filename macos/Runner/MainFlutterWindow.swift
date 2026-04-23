@@ -76,8 +76,14 @@ class MainFlutterWindow: NSWindow {
                     return
                 }
 
-                self.animateResize(width: width, height: height, duration: duration, curve: curve)
-                result(true)
+                self.animateResize(
+                    width: width,
+                    height: height,
+                    duration: duration,
+                    curve: curve
+                ) {
+                    result(true)
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }
@@ -94,15 +100,46 @@ class MainFlutterWindow: NSWindow {
             switch call.method {
 
             case "moveToNotch":
-                self.moveToNotch()
-                result(true)
-
+                self.moveToNotch() {
+                    result(true)
+                }
             default:
                 result(FlutterMethodNotImplemented)
             }
         }
 
         super.awakeFromNib()
+    }
+
+    private func springAnimate(
+        to newFrame: NSRect,
+        mass: CGFloat = 1,
+        stiffness: CGFloat = 100,
+        damping: CGFloat = 12,
+        initialVelocity: CGFloat = 0,
+        completion: @escaping () -> Void
+    ) {
+        let oldFrame = self.frame
+
+        let spring = CASpringAnimation(keyPath: "frame")
+        spring.fromValue = oldFrame
+        spring.toValue = newFrame
+        spring.mass = mass
+        spring.stiffness = stiffness
+        spring.damping = damping
+        spring.initialVelocity = initialVelocity
+        spring.duration = spring.settlingDuration
+
+        self.animations = ["frame": spring]
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.allowsImplicitAnimation = true
+            context.duration = spring.settlingDuration
+            self.animator().setFrame(newFrame, display: true)
+        } completionHandler: {
+            self.animations = [:]
+            completion()
+        }
     }
 
     private var isDynamicIsland = false
@@ -113,7 +150,8 @@ class MainFlutterWindow: NSWindow {
         width: CGFloat,
         height: CGFloat,
         duration: Double,
-        curve: String
+        curve: String,
+        completion: @escaping () -> Void
     ) {
         let oldFrame = self.frame
         let newSize = NSSize(width: width, height: height)
@@ -130,7 +168,6 @@ class MainFlutterWindow: NSWindow {
         let centerX = isDynamicIsland ? islandAnchorX! : oldFrame.midX
 
         let newY: CGFloat
-
         if isDynamicIsland {
             newY = islandAnchorY! - newSize.height
         } else {
@@ -151,12 +188,28 @@ class MainFlutterWindow: NSWindow {
                                         screenFrame.maxX - newSize.width))
         }
 
+        let animation = CASpringAnimation(keyPath: "frame")
+        animation.fromValue = oldFrame
+        animation.toValue = newFrame
+
+        animation.mass = 1
+        animation.stiffness = 150
+        animation.damping = 15
+        animation.initialVelocity = 0
+
+        animation.duration = animation.settlingDuration
+
+        self.animations = ["frame": animation]
+
         NSAnimationContext.runAnimationGroup { context in
-            context.duration = duration
-            context.timingFunction = timingFunction(from: curve)
             context.allowsImplicitAnimation = true
-            self.setFrame(newFrame, display: true)
+            context.duration = animation.duration
+            self.animator().setFrame(newFrame, display: true)
+        } completionHandler: {
+            completion()
+            self.animations = [:]
         }
+
     }
 
     private func timingFunction(from curve: String) -> CAMediaTimingFunction {
@@ -171,15 +224,20 @@ class MainFlutterWindow: NSWindow {
 
     private var oldFrame: NSRect?
 
-    private func moveToNotch() {
-        guard let screen = self.screen else { return }
+    func moveToNotch(completion: @escaping () -> Void) {
+        guard let screen = self.screen else {
+            completion()
+            return
+        }
 
-        let windowSize = self.frame.size
         let screenFrame = screen.frame
 
         if isDynamicIsland {
             isDynamicIsland = false
-            restoreWindow()
+            islandAnchorX = nil
+            islandAnchorY = nil
+            restoreWindow(completion: completion)
+            oldFrame = nil
             return
         }
 
@@ -187,58 +245,81 @@ class MainFlutterWindow: NSWindow {
 
         if oldFrame == nil {
             let oldFrameSelf = self.frame
-            let newSize = NSSize(width: 160, height: 50)
+            let oldSize = NSSize(width: 160, height: 50)
 
             let centerX = oldFrameSelf.midX
             let centerY = oldFrameSelf.midY
 
             var newFrame = NSRect(
-                x: centerX - newSize.width / 2,
-                y: centerY - newSize.height / 2,
-                width: newSize.width,
-                height: newSize.height
+                x: centerX - oldSize.width / 2,
+                y: centerY - oldSize.height / 2,
+                width: oldSize.width,
+                height: oldSize.height
             )
 
-            if let screenFrame = self.screen?.visibleFrame {
-                newFrame.origin.x = max(screenFrame.minX,
+            if let visible = self.screen?.visibleFrame {
+                newFrame.origin.x = max(visible.minX,
                                         min(newFrame.origin.x,
-                                            screenFrame.maxX - newSize.width))
-                newFrame.origin.y = max(screenFrame.minY,
+                                            visible.maxX - oldSize.width))
+                newFrame.origin.y = max(visible.minY,
                                         min(newFrame.origin.y,
-                                            screenFrame.maxY - newSize.height))
+                                            visible.maxY - oldSize.height))
             }
+
             oldFrame = newFrame
         }
 
-        let x = screenFrame.origin.x + (screenFrame.width - 420) / 2
-        let y = screenFrame.origin.y + screenFrame.height - 32
-
-        let newFrame = NSRect(
-            x: x,
-            y: y,
-            width: 420,
-            height: 32
-        )
-
         self.styleMask = [.borderless, .fullSizeContentView]
-        self.contentView?.subviews
-            .filter { $0 is NSVisualEffectView }
-            .forEach { $0.removeFromSuperview() }
-        self.setFrame(newFrame, display: true)
+        let moveFrame = NSRect(
+            x: screenFrame.origin.x + (screenFrame.width - 160) / 2,
+            y: screenFrame.origin.y + screenFrame.height - 25,
+            width: 160,
+            height: 25
+        )
+        springAnimate(to: moveFrame, mass: 1, stiffness: 220, damping: 25) {
+            self.contentView?.subviews
+                .filter { $0 is NSVisualEffectView }
+                .forEach { $0.removeFromSuperview() }
+            let topEdge = screenFrame.origin.y + screenFrame.height  
+            let expandFrame = NSRect(
+                x: screenFrame.origin.x + (screenFrame.width - 420) / 2,
+                y: topEdge - 45,
+                width: 420,
+                height: 45
+            )
+
+            self.springAnimate(to: expandFrame, mass: 1, stiffness: 150, damping: 25) {
+                completion()
+            }
+        }
     }
 
-    private func restoreWindow() {
-        guard let frame = oldFrame else { return }
-        self.styleMask = [.titled, .fullSizeContentView]
-        self.setFrame(frame, display: true)
-        let blurView = NSVisualEffectView(frame: self.contentView!.bounds)
-        blurView.autoresizingMask = [.width, .height]
-        blurView.blendingMode = .behindWindow
-        blurView.material = .fullScreenUI
-        blurView.state = .active
-        blurView.wantsLayer = true
-        self.contentView?.addSubview(blurView, positioned: .below, relativeTo: nil)
-        oldFrame = nil
+    private func restoreWindow(completion: @escaping () -> Void) {
+        guard let frame = oldFrame else { completion(); return }
+        guard let screen = self.screen else { completion(); return }
+
+        let screenFrame = screen.frame
+        let collapseFrame = NSRect(
+            x: screenFrame.origin.x + (screenFrame.width - 160) / 2,
+            y: screenFrame.origin.y + screenFrame.height - 20,
+            width: 160,
+            height: 20
+        )
+        springAnimate(to: collapseFrame, mass: 1, stiffness: 120, damping: 12) {
+            self.styleMask = [.titled, .fullSizeContentView]
+            let blurView = NSVisualEffectView(frame: self.contentView!.bounds)
+            blurView.autoresizingMask = [.width, .height]
+            blurView.blendingMode = .behindWindow
+            blurView.material = .fullScreenUI
+            blurView.state = .active
+            blurView.wantsLayer = true
+            self.contentView?.addSubview(blurView, positioned: .below, relativeTo: nil)
+
+            self.springAnimate(to: frame, mass: 1, stiffness: 220, damping: 25) {
+                self.oldFrame = nil
+                completion()
+            }
+        }
     }
 }
 
