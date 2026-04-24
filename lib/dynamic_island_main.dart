@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
+import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_battery.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_time.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ class DynamicIslandMain extends StatefulWidget {
 class _DynamicIslandMainState extends State<DynamicIslandMain> {
   static const notchChannel = MethodChannel('window/notch');
   late MainAppController _mainAppController;
+  static ValueNotifier<int> pageIndex = ValueNotifier(0);
 
   void initKeyBind(BuildContext context) async {
     await hotKeyManager.register(
@@ -76,12 +78,12 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
           await _mainAppController.requestState(IslandState.collapsed);
           Future.delayed(const Duration(milliseconds: 550), () {
             _mainAppController.isDynamicIsland = !_mainAppController.isDynamicIsland;
+            windowManager.setIgnoreMouseEvents(
+            _mainAppController.isDynamicIsland ? false : _mainAppController.clickThrough,
+              forward: true,
+            );
           });
           await notchChannel.invokeMethod('moveToNotch');
-          await windowManager.setIgnoreMouseEvents(
-            _mainAppController.isDynamicIsland ? false : _mainAppController.clickThrough,
-            forward: true,
-          );
           _mainAppController.animatedChangeDynamicIsland = false;
         } catch (e) {
           print('Notch error: $e');
@@ -101,9 +103,16 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   Widget build(BuildContext context) {
     List<Widget> pageDynamicIsland = [
       DynamicIslandTime(),
-      DynamicIslandBattery(mainAppController: _mainAppController,)
+      DynamicIslandBattery()
     ];
-    ValueNotifier<int> pageIndex = ValueNotifier(1);
+    List<SizeWindowObject> sizeWindowObjects = [
+      SizeWindowObject(),
+      SizeWindowObject(
+        expandedSize: Size(200, 140),
+        expandedSizeBaseDynamicIsland: Size(420, 130)
+      )
+    ];
+    _mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return GestureDetector(
@@ -114,16 +123,14 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
           onTap: () {
             if (mainAppController.animatedChangeDynamicIsland) return;
             if (!mainAppController.isDynamicIsland) {
-              if (_mainAppController.isAnimating || _mainAppController.animatedChangeDynamicIsland) return;
+              if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
               try {
                 mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
               } catch (_) {}
             } else {
-              if (pageIndex.value == pageDynamicIsland.length - 1) {
-                pageIndex.value = 0;
-                return;
-              }
-              pageIndex.value++;
+              pageIndex.value == pageDynamicIsland.length - 1 ? pageIndex.value = 0 :pageIndex.value++;
+              mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
+              mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland);
             }
           },
           child: Scaffold(

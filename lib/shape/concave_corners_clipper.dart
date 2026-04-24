@@ -5,8 +5,8 @@ import 'package:flutter/material.dart';
 class ConcaveCornersClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
-    const double r = 9;
-    const double rb = 9;
+    const double r = 12;
+    const double rb = 12;
     Path path = Path();
 
     path.moveTo(0, 0);

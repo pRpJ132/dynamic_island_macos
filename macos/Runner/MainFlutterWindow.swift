@@ -190,28 +190,9 @@ class MainFlutterWindow: NSWindow {
                                         screenFrame.maxX - newSize.width))
         }
 
-        let animation = CASpringAnimation(keyPath: "frame")
-        animation.fromValue = oldFrame
-        animation.toValue = newFrame
-
-        animation.mass = 1
-        animation.stiffness = 150
-        animation.damping = 15
-        animation.initialVelocity = 0
-
-        animation.duration = animation.settlingDuration
-
-        self.animations = ["frame": animation]
-
-        NSAnimationContext.runAnimationGroup { context in
-            context.allowsImplicitAnimation = true
-            context.duration = animation.duration
-            self.animator().setFrame(newFrame, display: true)
-        } completionHandler: {
+        self.springAnimate(to: newFrame, mass: 1, stiffness: 150, damping: 15) {
             completion()
-            self.animations = [:]
         }
-
     }
 
     private func timingFunction(from curve: String) -> CAMediaTimingFunction {
@@ -290,7 +271,7 @@ class MainFlutterWindow: NSWindow {
                 height: 45
             )
 
-            self.springAnimate(to: expandFrame, mass: 1, stiffness: 150, damping: 25) {
+            self.springAnimate(to: expandFrame, mass: 1, stiffness: 150, damping: 15) {
                 completion()
             }
         }
@@ -307,7 +288,7 @@ class MainFlutterWindow: NSWindow {
             width: 160,
             height: 20
         )
-        springAnimate(to: collapseFrame, mass: 1, stiffness: 120, damping: 12) {
+        springAnimate(to: collapseFrame, mass: 1, stiffness: 150, damping: 25) {
             self.styleMask = [.titled, .fullSizeContentView]
             let blurView = NSVisualEffectView(frame: self.contentView!.bounds)
             blurView.autoresizingMask = [.width, .height]

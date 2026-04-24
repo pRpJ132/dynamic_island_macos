@@ -58,7 +58,7 @@ class _DynamicIslandTimeState extends State<DynamicIslandTime> {
                 AnimatedPositioned(
                   curve: Curves.easeOutBack,
                   duration: Duration(milliseconds: 850),
-                  left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 0 : 10,
+                  left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 3 : 10,
                   top: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 20 : 10,
                   child: Container(
                     width: 9,

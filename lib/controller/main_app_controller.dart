@@ -102,12 +102,7 @@ class MainAppController extends ChangeNotifier {
         : isDynamicIsland ? sizeWindow.collapsedSizeBaseDynamicIsland : sizeWindow.collapsedSize;
 
     try {
-      _channel.invokeMethod('resize', {
-        'width': size.width,
-        'height': size.height,
-        'duration': 0.2,
-        'curve': 'easeInOut',
-      });
+      resizeWindow(size);
     } catch (_) {}
 
     isAnimating = false;
@@ -134,14 +129,18 @@ class MainAppController extends ChangeNotifier {
         : isDynamicIsland ? sizeWindow.collapsedSizeBaseDynamicIsland : sizeWindow.collapsedSize;
 
     try {
-      await _channel.invokeMethod('resize', {
-        'width': size.width,
-        'height': size.height,
-        'duration': 0.2,
-        'curve': 'easeInOut',
-      });
+      await resizeWindow(size);
     } catch (_) {}
 
     isAnimating = false;
+  }
+
+  Future<void> resizeWindow(Size size, {String? curve, double? duration}) async {
+    await _channel.invokeMethod('resize', {
+      'width': size.width,
+      'height': size.height,
+      'duration': duration ?? 0.2,
+      'curve': curve ?? 'easeInOut',
+    });
   }
 }

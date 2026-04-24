@@ -7,10 +7,8 @@ import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 
 class DynamicIslandBattery extends StatefulWidget {
-  final MainAppController mainAppController;
   const DynamicIslandBattery({
     super.key,
-    required this.mainAppController,
   });
 
   @override
@@ -22,21 +20,40 @@ class _DynamicIslandBatteryState extends State<DynamicIslandBattery> {
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: Consumer<MainAppController>(
-        builder: (_, controller, _) => ClipPath(
-          clipper: controller.isDynamicIsland ? ConcaveCornersClipper() : null,
+        builder: (_, mainAppController, _) => ClipPath(
+          clipper: mainAppController.isDynamicIsland ? ConcaveCornersClipper() : null,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 350),
             curve: Curves.easeOut,
             decoration: BoxDecoration(
-              color: controller.isDynamicIsland ? Colors.black : Colors.transparent,
+              color: mainAppController.isDynamicIsland ? Colors.black : Colors.transparent,
             ),
-            child: Center(
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 450),
-                child: controller.stateApp == IslandState.expanded
-                    ? _ExpandedBattery(batteryLevel: widget.mainAppController.batteryLevel, mainAppController: widget.mainAppController,)
-                    : _CollapsedBattery(batteryLevel: widget.mainAppController.batteryLevel, mainAppController: widget.mainAppController,),
-              ),
+            padding: EdgeInsets.symmetric(horizontal: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 24 : 20),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (mainAppController.isDynamicIsland)
+                AnimatedPositioned(
+                  curve: Curves.easeOutBack,
+                  duration: Duration(milliseconds: 850),
+                  left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 3 : 10,
+                  top: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 20 : 10,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle
+                    ),
+                  )
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 450),
+                  child: mainAppController.stateApp == IslandState.expanded
+                      ? _ExpandedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController,)
+                      : _CollapsedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController),
+                ),
+              ],
             ),
           ),
         ),
@@ -56,7 +73,7 @@ class _CollapsedBattery extends StatelessWidget {
       valueListenable: batteryLevel,
       builder: (_, level, _) {
         return Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: mainAppController.isDynamicIsland ? .end : .center,
           children: [
             Flexible(child: _BatteryIcon(level: level, mainAppController: mainAppController,)),
             const SizedBox(width: 4),
@@ -90,7 +107,14 @@ class _ExpandedBattery extends StatelessWidget {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Flexible(child: _BatteryIcon(level: level, mainAppController: mainAppController,)),
+            Flexible(
+              child: _BatteryIcon(
+                width: 58.0,
+                height: 29.0,
+                level: level,
+                mainAppController: mainAppController,
+              ),
+            ),
             const SizedBox(height: 10),
             Flexible(
               child: Text(
@@ -112,9 +136,13 @@ class _ExpandedBattery extends StatelessWidget {
 
 class _BatteryIcon extends StatefulWidget {
   final int level;
+  final double width;
+  final double height;
   final MainAppController mainAppController;
 
   const _BatteryIcon({
+    this.width = 38.0,
+    this.height = 19.0,
     required this.level,
     required this.mainAppController,
   });
@@ -167,8 +195,6 @@ class _BatteryIconState extends State<_BatteryIcon> {
 
   @override
   Widget build(BuildContext context) {
-    final double width = 38;
-    final double height = 19;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -176,10 +202,10 @@ class _BatteryIconState extends State<_BatteryIcon> {
           alignment: AlignmentGeometry.center,
           children: [
             Container(
-              width: width,
-              height: height,
+              width: widget.width,
+              height: widget.height,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.white54, width: 1.5),
+                border: Border.all(color: Colors.white54, width: 0.5),
                 borderRadius: BorderRadius.circular(5),
               ),
               padding: const EdgeInsets.all(2),
@@ -208,10 +234,9 @@ class _BatteryIconState extends State<_BatteryIcon> {
             ),
           ],
         ),
-        // Кончик батареи
         Container(
           width: 3,
-          height: height * 0.4,
+          height: widget.height * 0.4,
           decoration: const BoxDecoration(
             color: Colors.white38,
             borderRadius: BorderRadius.horizontal(right: Radius.circular(2)),
