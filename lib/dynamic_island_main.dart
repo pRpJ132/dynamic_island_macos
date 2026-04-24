@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
-import 'package:dynamic_lake_macos/dynamic_island_time.dart';
+import 'package:dynamic_lake_macos/view/dynamic_island_battery.dart';
+import 'package:dynamic_lake_macos/view/dynamic_island_time.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -95,26 +96,47 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     _mainAppController = context.read<MainAppController>();
     initKeyBind(context);
   }
-  
+
   @override
   Widget build(BuildContext context) {
+    List<Widget> pageDynamicIsland = [
+      DynamicIslandTime(),
+      DynamicIslandBattery(mainAppController: _mainAppController,)
+    ];
+    ValueNotifier<int> pageIndex = ValueNotifier(1);
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return GestureDetector(
-        onPanStart: (_) async => (
-          mainAppController.isDynamicIsland || 
-          mainAppController.isAnimating || 
-          mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
-        onTap: () {
-          if (!mainAppController.isDynamicIsland) {
-            if (_mainAppController.isAnimating || _mainAppController.animatedChangeDynamicIsland) return;
-            try {
-              mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
-            } catch (_) {}
-          }
-        },
-        child: DynamicIslandTime(),
-      );}
+          onPanStart: (_) async => (
+            mainAppController.isDynamicIsland || 
+            mainAppController.isAnimating || 
+            mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
+          onTap: () {
+            if (mainAppController.animatedChangeDynamicIsland) return;
+            if (!mainAppController.isDynamicIsland) {
+              if (_mainAppController.isAnimating || _mainAppController.animatedChangeDynamicIsland) return;
+              try {
+                mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
+              } catch (_) {}
+            } else {
+              if (pageIndex.value == pageDynamicIsland.length - 1) {
+                pageIndex.value = 0;
+                return;
+              }
+              pageIndex.value++;
+            }
+          },
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: ValueListenableBuilder(
+              valueListenable: pageIndex,
+              builder: (_, pageIndexValue, _) {
+                return pageDynamicIsland[pageIndexValue];
+              }
+            ),
+          )
+        );
+      }
     );
   }
 }

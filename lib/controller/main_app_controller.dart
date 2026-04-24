@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:battery_plus/battery_plus.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,8 @@ class MainAppController extends ChangeNotifier {
   bool clickThrough = false;
   SizeWindowObject sizeWindow = SizeWindowObject();
   Timer? _hoverPollTimer;
+  Battery? battery;
+  ValueNotifier<int> batteryLevel = ValueNotifier(100);
 
   bool _animatedChangeDynamicIsland = false;
   bool get animatedChangeDynamicIsland => _animatedChangeDynamicIsland;
@@ -43,14 +46,23 @@ class MainAppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  late StreamSubscription _sub;
   MainAppController() {
-    if (_isDynamicIsland) {
-      _hoverPollTimer = Timer.periodic(
-        const Duration(milliseconds: 30),
-        (_) => _pollMousePosition(),
-      );
-    }
+    battery = Battery();
+    _sub = Stream.periodic(const Duration(seconds: 1)).listen((_) async {
+      final level = await battery!.batteryLevel;
+      batteryLevel.value = level;
+    });
   }
+
+  @override
+  void dispose() {
+    _hoverPollTimer?.cancel();
+    _sub.cancel();
+    batteryLevel.dispose();
+    super.dispose();
+  }
+
   IslandState _targetState = IslandState.collapsed;
   bool _isAnimating = false;
   bool get isAnimating => _isAnimating;
