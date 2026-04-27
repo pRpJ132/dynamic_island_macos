@@ -46,6 +46,9 @@ dependencies:
   flutter_custom_clippers: ^2.1.0
   battery_plus: ^7.0.0
   ultimate_flutter_icons: ^1.4.0
+  desktop_drop: ^0.7.1
+  shared_preferences: ^2.5.5
+  cross_file: ^0.3.5+2
 
 dev_dependencies:
   flutter_test:

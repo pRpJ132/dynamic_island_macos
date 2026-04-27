@@ -28,7 +28,7 @@ class MainFlutterWindow: NSWindow {
             .ignoresCycle,
         ]
 
-        self.level = .screenSaver
+        self.level = .statusBar
         self.hasShadow = false
         self.makeKeyAndOrderFront(nil)
         self.orderFrontRegardless()
