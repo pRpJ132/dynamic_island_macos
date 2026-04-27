@@ -1,4 +1,6 @@
 PODS:
+  - audio_session (0.0.1):
+    - FlutterMacOS
   - battery_plus (0.0.1):
     - FlutterMacOS
   - desktop_drop (0.0.1):
@@ -8,6 +10,9 @@ PODS:
   - hotkey_manager_macos (0.0.1):
     - FlutterMacOS
     - HotKey
+  - just_audio (0.0.1):
+    - Flutter
+    - FlutterMacOS
   - macos_window_utils (1.0.0):
     - FlutterMacOS
   - screen_retriever_macos (0.0.1):
@@ -19,10 +24,12 @@ PODS:
     - FlutterMacOS
 
 DEPENDENCIES:
+  - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
   - battery_plus (from `Flutter/ephemeral/.symlinks/plugins/battery_plus/macos`)
   - desktop_drop (from `Flutter/ephemeral/.symlinks/plugins/desktop_drop/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
+  - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/darwin`)
   - macos_window_utils (from `Flutter/ephemeral/.symlinks/plugins/macos_window_utils/macos`)
   - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
   - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -33,6 +40,8 @@ SPEC REPOS:
     - HotKey
 
 EXTERNAL SOURCES:
+  audio_session:
+    :path: Flutter/ephemeral/.symlinks/plugins/audio_session/macos
   battery_plus:
     :path: Flutter/ephemeral/.symlinks/plugins/battery_plus/macos
   desktop_drop:
@@ -41,6 +50,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral
   hotkey_manager_macos:
     :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos
+  just_audio:
+    :path: Flutter/ephemeral/.symlinks/plugins/just_audio/darwin
   macos_window_utils:
     :path: Flutter/ephemeral/.symlinks/plugins/macos_window_utils/macos
   screen_retriever_macos:
@@ -51,11 +62,13 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
+  audio_session: eaca2512cf2b39212d724f35d11f46180ad3a33e
   battery_plus: f51ad29136e025b714b96f7d096f44f604615da7
   desktop_drop: 10a3e6a7fa9dbe350541f2574092fecfa345a07b
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
   HotKey: 400beb7caa29054ea8d864c96f5ba7e5b4852277
   hotkey_manager_macos: a4317849af96d2430fa89944d3c58977ca089fbe
+  just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   macos_window_utils: 23f54331a0fd51eea9e0ed347253bf48fd379d1d
   screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb

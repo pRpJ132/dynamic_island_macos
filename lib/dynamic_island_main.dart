@@ -125,7 +125,9 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         // expandedSizeBaseDynamicIsland: Size(280, 130)
         expandedSizeBaseDynamicIsland: Size(420, 190)
       ),
-      SizeWindowObject(),
+      SizeWindowObject(
+        expandedSize: Size(340, 340)
+      ),
     ];
     _mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
     return Consumer<MainAppController>(

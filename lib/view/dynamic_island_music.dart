@@ -2,11 +2,51 @@ import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_local_service.dart';
 import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 import 'package:flutter/material.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:marquee/marquee.dart';
 import 'package:provider/provider.dart';
+import 'package:ultimate_flutter_icons/flutter_icons.dart';
 
-class DynamicIslandMusic extends StatelessWidget {
+class DynamicIslandMusic extends StatefulWidget {
   const DynamicIslandMusic({super.key});
 
+  @override
+  State<DynamicIslandMusic> createState() => _DynamicIslandMusicState();
+}
+
+class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
+  final AudioPlayer player = AudioPlayer();
+
+  final ValueNotifier<String> _currentTrack = ValueNotifier("");
+  final ValueNotifier _isPlaying = ValueNotifier(false);
+
+  @override
+  void dispose() {
+    player.dispose();
+    _currentTrack.dispose();
+    _isPlaying.dispose();
+    super.dispose();
+  }
+
+  Future<void> _play(String path) async {
+    try {
+      if (_currentTrack.value != path) {
+        await player.setFilePath(path);
+        _currentTrack.value = path;
+      }
+
+      _isPlaying.value = true;
+      await player.play();
+    } catch (e) {
+      debugPrint('Audio error: $e');
+    }
+  }
+
+  Future<void> _pause() async {
+    await player.pause();
+    _isPlaying.value = false;
+  }
+  
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
@@ -29,16 +69,35 @@ class DynamicIslandMusic extends StatelessWidget {
                   ? Colors.black
                   : Colors.transparent,
             ),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 450),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeOut,
-              layoutBuilder: (currentChild, previousChildren) => Stack(
-                children: [...previousChildren, ?currentChild],
-              ),
-              child: mainAppController.stateApp == IslandState.expanded
-                  ? _ExpandedView(mainAppController: mainAppController)
-                  : _CollapsedView(mainAppController: mainAppController),
+            child: Stack(
+              children: [
+                if (mainAppController.isDynamicIsland)
+                AnimatedPositioned(
+                  curve: Curves.easeOutBack,
+                  duration: Duration(milliseconds: 850),
+                  left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 3 : 10,
+                  top: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 20 : 10,
+                  child: Container(
+                    width: 9,
+                    height: 9,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle
+                    ),
+                  )
+                ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 450),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeOut,
+                  layoutBuilder: (currentChild, previousChildren) => Stack(
+                    children: [...previousChildren, ?currentChild],
+                  ),
+                  child: mainAppController.stateApp == IslandState.expanded
+                      ? _ExpandedView(mainAppController: mainAppController, isPlaying: _isPlaying, currentTrack: _currentTrack,)
+                      : _CollapsedView(mainAppController: mainAppController),
+                ),
+              ],
             ),
           ),
         ),
@@ -49,7 +108,9 @@ class DynamicIslandMusic extends StatelessWidget {
 
 class _ExpandedView extends StatelessWidget {
   final MainAppController mainAppController;
-  const _ExpandedView({required this.mainAppController});
+  final ValueNotifier isPlaying;
+  final ValueNotifier currentTrack;
+  const _ExpandedView({required this.mainAppController, required this.isPlaying, required this.currentTrack});
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +128,7 @@ class _ExpandedView extends StatelessWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+          padding: const EdgeInsets.symmetric(vertical: 18),
           itemCount: tracks.length,
           itemBuilder: (_, index) {
             final path = tracks[index];
@@ -75,14 +136,48 @@ class _ExpandedView extends StatelessWidget {
 
             return ListTile(
               dense: true,
-              leading: const Icon(Icons.music_note, color: Colors.white70, size: 18),
-              title: Text(
-                name,
-                style: const TextStyle(color: Colors.white, fontSize: 13),
-                overflow: TextOverflow.ellipsis,
+              leading: IconButton(
+                icon: ValueListenableBuilder(
+                  valueListenable: currentTrack,
+                  builder: (_, currentTrackValue, _) {
+                    return ValueListenableBuilder(
+                      valueListenable: isPlaying,
+                      builder: (_, isPlayingValue, _) {
+                        return FIcon(
+                          (currentTrackValue == path && isPlayingValue == true)
+                              ? FA.FaPause
+                              : FA.FaPlay,
+                          color: Colors.white,
+                          size: 16,
+                        );
+                      }
+                    );
+                  }
+                ),
+                onPressed: () {
+                  final state = context.findAncestorStateOfType<_DynamicIslandMusicState>();
+                  final path = service.music[index];
+                  if (currentTrack.value == path && isPlaying.value == true) {
+                    state?._pause();
+                  } else {
+                    state?._play(path);
+                  }
+                },
+              ),
+              title: SizedBox(
+                height: 18,
+                child: Marquee(
+                  text: name,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  scrollAxis: Axis.horizontal,
+                  blankSpace: 30,
+                  pauseAfterRound: const Duration(seconds: 3),
+                  accelerationDuration: const Duration(seconds: 3),
+                  decelerationDuration: const Duration(milliseconds: 500),
+                ),
               ),
               trailing: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white38, size: 16),
+                icon: const FIcon(FA.FaTrash, color: Colors.white, size: 16),
                 onPressed: () => service.removeMusic(path),
               ),
             );
