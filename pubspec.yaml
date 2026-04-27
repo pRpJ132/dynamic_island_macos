@@ -45,6 +45,7 @@ dependencies:
   provider: ^6.1.5+1
   flutter_custom_clippers: ^2.1.0
   battery_plus: ^7.0.0
+  ultimate_flutter_icons: ^1.4.0
 
 dev_dependencies:
   flutter_test:

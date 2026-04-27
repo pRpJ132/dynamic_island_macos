@@ -4,6 +4,7 @@ import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_battery.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_time.dart';
+import 'package:dynamic_lake_macos/view/dynamic_island_timer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -103,14 +104,20 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   Widget build(BuildContext context) {
     List<Widget> pageDynamicIsland = [
       DynamicIslandTime(),
-      DynamicIslandBattery()
+      DynamicIslandBattery(),
+      DynamicIslandTimer(),
     ];
     List<SizeWindowObject> sizeWindowObjects = [
       SizeWindowObject(),
       SizeWindowObject(
         expandedSize: Size(200, 140),
-        expandedSizeBaseDynamicIsland: Size(420, 130)
-      )
+        expandedSizeBaseDynamicIsland: Size(420, 160)
+      ),
+      SizeWindowObject(
+        expandedSize: Size(200, 140),
+        // expandedSizeBaseDynamicIsland: Size(280, 130)
+        expandedSizeBaseDynamicIsland: Size(420, 190)
+      ),
     ];
     _mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
     return Consumer<MainAppController>(

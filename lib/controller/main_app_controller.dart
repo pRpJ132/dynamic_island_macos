@@ -34,7 +34,7 @@ class MainAppController extends ChangeNotifier {
     if (v) {
       _hoverPollTimer?.cancel();
       _hoverPollTimer = Timer.periodic(
-        const Duration(milliseconds: 30),
+        const Duration(milliseconds: 50),
         (_) => _pollMousePosition(),
       );
     } else {

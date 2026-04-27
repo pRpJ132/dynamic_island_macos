@@ -109,8 +109,8 @@ class _ExpandedBattery extends StatelessWidget {
           children: [
             Flexible(
               child: _BatteryIcon(
-                width: 58.0,
-                height: 29.0,
+                width: 76.0,
+                height: 33.0,
                 level: level,
                 mainAppController: mainAppController,
               ),
@@ -141,8 +141,8 @@ class _BatteryIcon extends StatefulWidget {
   final MainAppController mainAppController;
 
   const _BatteryIcon({
-    this.width = 38.0,
-    this.height = 19.0,
+    this.width = 30.0,
+    this.height = 16.4,
     required this.level,
     required this.mainAppController,
   });
@@ -229,7 +229,7 @@ class _BatteryIconState extends State<_BatteryIcon> {
               child: Icon(
                 CupertinoIcons.bolt_fill,
                 color: Colors.white,
-                size: 16,
+                size: widget.mainAppController.stateApp == IslandState.expanded ? 28 : 13,
               )
             ),
           ],

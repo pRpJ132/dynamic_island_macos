@@ -5,6 +5,7 @@ import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:ultimate_flutter_icons/flutter_icons.dart';
 
 class DynamicIslandTime extends StatefulWidget {
   const DynamicIslandTime({super.key});
@@ -115,7 +116,7 @@ class _ExpandedView extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 12),
           ValueListenableBuilder(
             valueListenable: time,
             builder: (_, value, _) {
@@ -146,6 +147,7 @@ class _CollapsedView extends StatelessWidget {
     return SizedBox.expand(
       child: Row(
         mainAxisAlignment: mainAppController.isDynamicIsland ? .end : .center,
+        spacing: 5,
         children: [
           ValueListenableBuilder(
             valueListenable: time,
@@ -159,6 +161,11 @@ class _CollapsedView extends StatelessWidget {
                 ),
               );
             },
+          ),
+          FIcon(
+            GO.GoClockFill,
+            color: Colors.white,
+            size: 16,
           ),
         ],
       ),

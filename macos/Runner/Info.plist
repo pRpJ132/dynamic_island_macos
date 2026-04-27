@@ -5,6 +5,12 @@
 	<key>LSUIElement</key>
 	<string>1</string>
 
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Dynamic Island нужен доступ для отображения уведомлений</string>
+
+	<key>NSUserNotificationAlertStyle</key>
+	<string>alert</string>
+
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleExecutable</key>
