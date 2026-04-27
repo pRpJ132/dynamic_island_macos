@@ -1,6 +1,5 @@
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_local_service.dart';
-import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:marquee/marquee.dart';
@@ -49,58 +48,17 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
   
   @override
   Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: Consumer<MainAppController>(
-        builder: (_, mainAppController, _) => ClipPath(
-          clipper: mainAppController.isDynamicIsland
-              ? ConcaveCornersClipper()
-              : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
-            padding: EdgeInsets.symmetric(
-              horizontal: (mainAppController.isDynamicIsland &&
-                      mainAppController.stateApp != IslandState.expanded)
-                  ? 24
-                  : 20,
-            ),
-            decoration: BoxDecoration(
-              color: mainAppController.isDynamicIsland
-                  ? Colors.black
-                  : Colors.transparent,
-            ),
-            child: Stack(
-              children: [
-                if (mainAppController.isDynamicIsland)
-                AnimatedPositioned(
-                  curve: Curves.easeOutBack,
-                  duration: Duration(milliseconds: 850),
-                  left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 3 : 10,
-                  top: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 20 : 10,
-                  child: Container(
-                    width: 9,
-                    height: 9,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle
-                    ),
-                  )
-                ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 450),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeOut,
-                  layoutBuilder: (currentChild, previousChildren) => Stack(
-                    children: [...previousChildren, ?currentChild],
-                  ),
-                  child: mainAppController.stateApp == IslandState.expanded
-                      ? _ExpandedView(mainAppController: mainAppController, isPlaying: _isPlaying, currentTrack: _currentTrack,)
-                      : _CollapsedView(mainAppController: mainAppController),
-                ),
-              ],
-            ),
-          ),
+    return Consumer<MainAppController>(
+      builder: (_, mainAppController, _) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 450),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeOut,
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          children: [...previousChildren, ?currentChild],
         ),
+        child: mainAppController.stateApp == IslandState.expanded
+            ? _ExpandedView(mainAppController: mainAppController, isPlaying: _isPlaying, currentTrack: _currentTrack,)
+            : _CollapsedView(mainAppController: mainAppController),
       ),
     );
   }

@@ -4,6 +4,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/musci_local_service.dart';
+import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_battery.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_drop_file.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_music.dart';
@@ -105,30 +106,31 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   }
 
   final ValueNotifier<bool> _dragging = ValueNotifier(false);
+  List<Widget> pageDynamicIsland = [
+    DynamicIslandTime(),
+    DynamicIslandBattery(),
+    DynamicIslandTimer(),
+    DynamicIslandMusic(),
+  ];
+
+  List<SizeWindowObject> sizeWindowObjects = [
+    SizeWindowObject(),
+    SizeWindowObject(
+      expandedSize: Size(200, 140),
+      expandedSizeBaseDynamicIsland: Size(420, 160)
+    ),
+    SizeWindowObject(
+      expandedSize: Size(200, 140),
+      // expandedSizeBaseDynamicIsland: Size(280, 130)
+      expandedSizeBaseDynamicIsland: Size(420, 190)
+    ),
+    SizeWindowObject(
+      expandedSize: Size(340, 340)
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    List<Widget> pageDynamicIsland = [
-      DynamicIslandTime(),
-      DynamicIslandBattery(),
-      DynamicIslandTimer(),
-      DynamicIslandMusic(),
-    ];
-    List<SizeWindowObject> sizeWindowObjects = [
-      SizeWindowObject(),
-      SizeWindowObject(
-        expandedSize: Size(200, 140),
-        expandedSizeBaseDynamicIsland: Size(420, 160)
-      ),
-      SizeWindowObject(
-        expandedSize: Size(200, 140),
-        // expandedSizeBaseDynamicIsland: Size(280, 130)
-        expandedSizeBaseDynamicIsland: Size(420, 190)
-      ),
-      SizeWindowObject(
-        expandedSize: Size(340, 340)
-      ),
-    ];
     _mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
@@ -156,38 +158,78 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
             _dragging.value = false;
           },
           child: ValueListenableBuilder(
-            valueListenable: _dragging, 
-            builder: (_, draggingValue, _) => !draggingValue ? GestureDetector(
-            onPanStart: (_) async => (
-              mainAppController.isDynamicIsland || 
-              mainAppController.isAnimating || 
-              mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
-              onTap: () {
-                if (mainAppController.animatedChangeDynamicIsland) return;
-                if (!mainAppController.isDynamicIsland) {
-                  if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
-                  try {
-                    mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
-                  } catch (_) {}
-                } else {
-                  pageIndex.value == pageDynamicIsland.length - 1 ? pageIndex.value = 0 :pageIndex.value++;
-                  mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
-                  mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland);
-                }
-              },
-              child: Scaffold(
-                backgroundColor: Colors.transparent,
-                body: ValueListenableBuilder(
-                  valueListenable: pageIndex,
-                  builder: (_, pageIndexValue, _) {
-                    return pageDynamicIsland[pageIndexValue];
-                  }
-                ),
-              )
-            ) : DynamicIslandDropFile(),
+            valueListenable: pageIndex,
+            builder: (_, pageIndexValue, _) {
+              return ValueListenableBuilder(
+                valueListenable: _dragging, 
+                builder: (_, draggingValue, _) => !draggingValue ? GestureDetector(
+                onPanStart: (_) async => (
+                  mainAppController.isDynamicIsland || 
+                  mainAppController.isAnimating || 
+                  mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
+                  onTap: () {
+                    if (mainAppController.animatedChangeDynamicIsland) return;
+                    if (!mainAppController.isDynamicIsland) {
+                      if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
+                      try {
+                        mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
+                      } catch (_) {}
+                    } else {
+                      pageIndex.value == pageDynamicIsland.length - 1 ? pageIndex.value = 0 :pageIndex.value++;
+                      mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
+                      mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland);
+                    }
+                  },
+                  child: buildScaffoldMain(pageDynamicIsland[pageIndexValue])
+                ) : buildScaffoldMain(DynamicIslandDropFile())
+              );
+            }
           )
         );
       }
+    );
+  }
+
+  Widget buildScaffoldMain(
+    Widget child
+  ) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: SizedBox.expand(
+        child: Consumer<MainAppController>(
+          builder: (_, mainAppController, _) => ClipPath(
+            clipper: mainAppController.isDynamicIsland ? ConcaveCornersClipper() : null,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                color: mainAppController.isDynamicIsland ? Colors.black : Colors.transparent,
+              ),
+              padding: EdgeInsets.symmetric(horizontal: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 24 : 20),
+              child: Stack(
+                children: [
+                  if (mainAppController.isDynamicIsland)
+                  AnimatedPositioned(
+                    curve: Curves.easeInOut,
+                    duration: Duration(milliseconds: 650),
+                    left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 3 : 10,
+                    top: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 20 : 10,
+                    child: Container(
+                      width: 9,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle
+                      ),
+                    ),
+                  ),
+                  child
+                ],
+              )
+            )
+          )
+        ),
+      ),
     );
   }
 }

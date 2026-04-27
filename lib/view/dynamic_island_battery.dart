@@ -4,7 +4,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
-import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 
 class DynamicIslandBattery extends StatefulWidget {
   const DynamicIslandBattery({
@@ -20,41 +19,18 @@ class _DynamicIslandBatteryState extends State<DynamicIslandBattery> {
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: Consumer<MainAppController>(
-        builder: (_, mainAppController, _) => ClipPath(
-          clipper: mainAppController.isDynamicIsland ? ConcaveCornersClipper() : null,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeOut,
-            decoration: BoxDecoration(
-              color: mainAppController.isDynamicIsland ? Colors.black : Colors.transparent,
-            ),
-            padding: EdgeInsets.symmetric(horizontal: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 24 : 20),
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (mainAppController.isDynamicIsland)
-                AnimatedPositioned(
-                  curve: Curves.easeOutBack,
-                  duration: Duration(milliseconds: 850),
-                  left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 3 : 10,
-                  top: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 20 : 10,
-                  child: Container(
-                    width: 9,
-                    height: 9,
-                    decoration: BoxDecoration(
-                      color: Colors.green,
-                      shape: BoxShape.circle
-                    ),
-                  )
-                ),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 450),
-                  child: mainAppController.stateApp == IslandState.expanded
-                      ? _ExpandedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController,)
-                      : _CollapsedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController),
-                ),
-              ],
-            ),
+        builder: (_, mainAppController, _) => AnimatedContainer(
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+          ),
+          padding: EdgeInsets.symmetric(horizontal: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 24 : 20),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 450),
+            child: mainAppController.stateApp == IslandState.expanded
+                ? _ExpandedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController,)
+                : _CollapsedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController),
           ),
         ),
       ),
@@ -141,8 +117,8 @@ class _BatteryIcon extends StatefulWidget {
   final MainAppController mainAppController;
 
   const _BatteryIcon({
-    this.width = 30.0,
-    this.height = 16.4,
+    this.width = 24.0,
+    this.height = 12.4,
     required this.level,
     required this.mainAppController,
   });
