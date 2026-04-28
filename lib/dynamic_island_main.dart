@@ -125,7 +125,9 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       expandedSizeBaseDynamicIsland: Size(420, 190)
     ),
     SizeWindowObject(
-      expandedSize: Size(340, 340)
+      collapsedSizeBaseDynamicIsland: Size(420, 48),
+      expandedSize: Size(360, 290),
+      expandedSizeBaseDynamicIsland: Size(420, 270),
     ),
   ];
 

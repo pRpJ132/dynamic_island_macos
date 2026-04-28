@@ -190,7 +190,7 @@ class MainFlutterWindow: NSWindow {
                                         screenFrame.maxX - newSize.width))
         }
 
-        self.springAnimate(to: newFrame, mass: 1, stiffness: 150, damping: 15) {
+        self.springAnimate(to: newFrame, mass: 1, stiffness: 170, damping: 17) {
             completion()
         }
     }

@@ -19,26 +19,31 @@ class DynamicIslandMusic extends StatefulWidget {
 }
 
 class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
-  final AudioPlayer player = AudioPlayer();
-
+  final AudioPlayer _player = AudioPlayer();
   final ValueNotifier<String> _currentTrack = ValueNotifier("");
   final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
-  final ValueNotifier<Waveform?> _waveforms = ValueNotifier(null);
-
-  StreamSubscription? _playingSubscription;
+  final ValueNotifier<Waveform> _waveforms = ValueNotifier(Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []));
+  late final StreamSubscription _stateSubscription;
 
   @override
   void initState() {
     super.initState();
-    _playingSubscription = player.playingStream.listen((playing) {
-      _isPlaying.value = playing;
+    _stateSubscription = _player.playerStateStream.listen((state) async {
+      final isPlaying = state.playing;
+      final isCompleted = state.processingState == ProcessingState.completed;
+      if (isCompleted) {
+        _isPlaying.value = false;
+        _currentTrack.value = "";
+      } else {
+        _isPlaying.value = isPlaying;
+      }
     });
   }
 
   @override
   void dispose() {
-    _playingSubscription?.cancel();
-    player.dispose();
+    _stateSubscription.cancel();
+    _player.dispose();
     _currentTrack.dispose();
     _isPlaying.dispose();
     _waveforms.dispose();
@@ -48,27 +53,22 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
   Future<void> _play(String path) async {
     try {
       if (_currentTrack.value != path) {
-        await player.setFilePath(path);
+        await _player.setFilePath(path);
         _currentTrack.value = path;
-
-        _extractWaveformAsync(path);
+        final wf = await extractWaveform(path);
+        if (wf != null && mounted) {
+          _waveforms.value = wf;
+        }
+        await _player.seek(Duration.zero);
       }
-
-      await player.play();
+      await _player.play();
     } catch (e) {
       debugPrint('Audio error: $e');
     }
   }
 
-  void _extractWaveformAsync(String path) async {
-    final wf = await extractWaveform(path);
-    if (wf != null && mounted) {
-      _waveforms.value = wf;
-    }
-  }
-
   Future<void> _pause() async {
-    await player.pause();
+    await _player.pause();
   }
 
   Future<Waveform?> extractWaveform(String path) async {
@@ -93,7 +93,7 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
   Widget build(BuildContext context) {
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) => AnimatedSwitcher(
-        duration: const Duration(milliseconds: 450),
+        duration: const Duration(milliseconds: 250),
         switchInCurve: Curves.easeOut,
         switchOutCurve: Curves.easeIn,
         layoutBuilder: (currentChild, previousChildren) => Stack(
@@ -107,11 +107,14 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
                 currentTrack: _currentTrack,
                 onPlay: _play,
                 onPause: _pause,
+                waveform: _waveforms,
+                player: _player,
               )
             : _CollapsedView(
                 key: const ValueKey('collapsed'),
                 mainAppController: mainAppController,
-                player: player,
+                player: _player,
+                isPlaying: _isPlaying,
                 waveform: _waveforms,
               ),
       ),
@@ -125,6 +128,8 @@ class _ExpandedView extends StatelessWidget {
   final ValueNotifier<String> currentTrack;
   final Future<void> Function(String path) onPlay;
   final Future<void> Function() onPause;
+  final ValueNotifier<Waveform> waveform;
+  final AudioPlayer player;
 
   const _ExpandedView({
     super.key,
@@ -132,15 +137,26 @@ class _ExpandedView extends StatelessWidget {
     required this.isPlaying,
     required this.currentTrack,
     required this.onPlay,
-    required this.onPause,
+    required this.onPause, 
+    required this.waveform, 
+    required this.player,
   });
+
+  String formatDuration(Duration? d) {
+    if (d == null) return "0:00";
+
+    final minutes = d.inMinutes.remainder(60);
+    final seconds = d.inSeconds.remainder(60);
+
+    return "${minutes.toString().padLeft(2, '0')}:"
+          "${seconds.toString().padLeft(2, '0')}";
+  }
 
   @override
   Widget build(BuildContext context) {
     return Consumer<MusicLocalService>(
       builder: (_, service, _) {
         final tracks = service.music;
-
         if (tracks.isEmpty) {
           return const Center(
             child: Text(
@@ -150,143 +166,199 @@ class _ExpandedView extends StatelessWidget {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          itemCount: tracks.length,
-          itemBuilder: (_, index) {
-            final path = tracks[index];
-            final name = path.split('/').last;
-
-            return ListTile(
-              dense: true,
-              leading: ValueListenableBuilder<String>(
-                valueListenable: currentTrack,
-                builder: (_, currentTrackValue, _) {
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: isPlaying,
-                    builder: (_, isPlayingValue, _) {
-                      final isCurrentAndPlaying =
-                          currentTrackValue == path && isPlayingValue;
-                      return IconButton(
-                        icon: FIcon(
-                          isCurrentAndPlaying ? FA.FaPause : FA.FaPlay,
-                          color: Colors.white,
-                          size: 16,
+        return Column(
+          children: [
+            Expanded(
+              flex: 3,
+              child: SizedBox(
+                height: 150,
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  itemCount: tracks.length,
+                  itemBuilder: (_, index) {
+                    final path = tracks[index];
+                    final name = path.split('/').last;
+                
+                    return ListTile(
+                      dense: true,
+                      leading: ValueListenableBuilder(
+                        valueListenable: currentTrack,
+                        builder: (_, currentTrackValue, _) => ValueListenableBuilder<bool>(
+                          valueListenable: isPlaying,
+                          builder: (_, isPlayingValue, _) {
+                            final isCurrentAndPlaying =
+                                currentTrackValue == path && isPlayingValue;
+                            return IconButton(
+                              icon: FIcon(
+                                isCurrentAndPlaying ? FA.FaPause : FA.FaPlay,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              onPressed: () {
+                                if (isCurrentAndPlaying) {
+                                  onPause();
+                                } else {
+                                  onPlay(path);
+                                }
+                              },
+                            );
+                          },
+                        )
+                      ),
+                      title: SizedBox(
+                        height: 18,
+                        child: Marquee(
+                          text: name,
+                          style: const TextStyle(color: Colors.white, fontSize: 13),
+                          scrollAxis: Axis.horizontal,
+                          blankSpace: 30,
+                          pauseAfterRound: const Duration(seconds: 3),
+                          accelerationDuration: const Duration(seconds: 3),
+                          decelerationDuration: const Duration(milliseconds: 500),
                         ),
-                        onPressed: () {
-                          if (isCurrentAndPlaying) {
-                            onPause();
-                          } else {
-                            onPlay(path);
-                          }
-                        },
-                      );
-                    },
-                  );
-                },
-              ),
-              title: SizedBox(
-                height: 18,
-                child: Marquee(
-                  text: name,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  scrollAxis: Axis.horizontal,
-                  blankSpace: 30,
-                  pauseAfterRound: const Duration(seconds: 3),
-                  accelerationDuration: const Duration(seconds: 3),
-                  decelerationDuration: const Duration(milliseconds: 500),
+                      ),
+                      trailing: IconButton(
+                          icon: const FIcon(FA.FaTrash, color: Colors.white, size: 16),
+                          onPressed: () => service.removeMusic(path),
+                      ),
+                    );
+                  },
                 ),
               ),
-              trailing: IconButton(
-                icon: const FIcon(FA.FaTrash, color: Colors.white, size: 16),
-                onPressed: () => service.removeMusic(path),
+            ),
+            SizedBox(height: 15),
+            Expanded(
+              flex: 1,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                child: Column(
+                  spacing: 5,
+                  crossAxisAlignment: .end,
+                  children: [
+                    Flexible(
+                      child: ValueListenableBuilder(
+                        valueListenable: waveform,
+                        builder: (_, waveformValue, _) {
+                          return SizedBox(
+                            width: 39,
+                            height: 17,
+                            child: WaveformAnimated(
+                              player: player,
+                              waveformValue: waveformValue, 
+                              isPlaying: isPlaying,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    Flexible(
+                      child: Row(
+                        children: [
+                          StreamBuilder<Duration?>(
+                            stream: player.durationStream,
+                            builder: (context, snapshot) {
+                              return Text(
+                                formatDuration(player.duration ?? Duration.zero),
+                                style: const TextStyle(color: Colors.white),
+                              );
+                            },
+                          ),
+                          Expanded(
+                            child: SizedBox(
+                              height: 25,
+                              child: StreamBuilder<Duration>(
+                                stream: player.positionStream,
+                                builder: (context, snapshot) {
+                                  final position = snapshot.data ?? Duration.zero;
+                                  final duration = player.duration ?? Duration.zero;
+                              
+                                  final max = duration.inMilliseconds.toDouble();
+                                  final value = position.inMilliseconds.clamp(0, max).toDouble();
+                              
+                                  return ValueListenableBuilder(
+                                    valueListenable: currentTrack,
+                                    builder: (_, currentTrackValue, _) {
+                                      return Slider(
+                                        min: 0,
+                                        max: max == 0 ? 1 : max,
+                                        value: value,
+                                        onChanged: (newValue) {
+                                          player.seek(Duration(milliseconds: newValue.toInt()));
+                                        },
+                                        onChangeStart: (value) => onPause(),
+                                        onChangeEnd: (value) => onPlay(currentTrackValue),
+                                        activeColor: Colors.white,
+                                        inactiveColor: Colors.grey,
+                                      );
+                                    }
+                                  );
+                                },
+                              ),
+                            ),
+                          ),
+                          StreamBuilder<Duration>(
+                            stream: player.positionStream,
+                            builder: (context, snapshot) {
+                              final position = snapshot.data ?? Duration.zero;
+
+                              return Text(
+                                formatDuration(position),
+                                style: const TextStyle(color: Colors.white),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-          },
+            ),
+          ],
         );
       },
     );
   }
 }
 
-class _CollapsedView extends StatefulWidget {
+class _CollapsedView extends StatelessWidget {
   final MainAppController mainAppController;
   final AudioPlayer player;
   final ValueNotifier<Waveform?> waveform;
+  final ValueNotifier<bool> isPlaying;
 
   const _CollapsedView({
     super.key,
     required this.mainAppController,
     required this.player,
-    required this.waveform,
+    required this.waveform, 
+    required this.isPlaying,
   });
-
-  @override
-  State<_CollapsedView> createState() => _CollapsedViewState();
-}
-
-class _CollapsedViewState extends State<_CollapsedView>
-    with SingleTickerProviderStateMixin {
-  final List<double> _previousHeights = List.filled(60, 4.0, growable: true);
-  late final Ticker _ticker;
-  StreamSubscription? _positionSub;
-  final ValueNotifier<double> _visualPhase = ValueNotifier(0.0);
-  double _targetPhase = 0.0;
-
-  @override
-  void initState() {
-    super.initState();
-    _positionSub = widget.player.positionStream.listen((position) {
-      final duration = widget.player.duration;
-      if (duration == null || duration.inMilliseconds <= 0) return;
-      _targetPhase = (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
-    });
-
-    _ticker = createTicker((Duration elapsed) {
-      if (!widget.player.playing) return;
-      final newPhase = _visualPhase.value + (_targetPhase - _visualPhase.value) * 0.85;
-      _visualPhase.value = newPhase;
-    });
-    _ticker.start();
-  }
-
-  @override
-  void dispose() {
-    _positionSub?.cancel();
-    _ticker.dispose();
-    _visualPhase.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: Consumer<MusicLocalService>(
         builder: (_, service, _) => Row(
-          mainAxisAlignment: widget.mainAppController.isDynamicIsland
+          mainAxisAlignment: mainAppController.isDynamicIsland
               ? MainAxisAlignment.end
               : MainAxisAlignment.center,
           children: [
             const SizedBox(width: 5),
-              ValueListenableBuilder(
-                valueListenable: widget.waveform,
-                builder: (_, waveformValue, _) => (waveformValue != null && widget.player.playing) ? SizedBox(
-                  width: 60,
-                  height: 25,
-                  child: ValueListenableBuilder(
-                    valueListenable: _visualPhase,
-                    builder: (_, visualPhaseValue, _) {
-                      return CustomPaint(
-                        painter: WaveformPainter(
-                          waveformValue,
-                          phase: visualPhaseValue,
-                          previousHeights: _previousHeights,
-                        ),
-                      );
-                    }
+            ValueListenableBuilder(
+              valueListenable: waveform,
+              builder: (_, waveformValue, _) {
+                return SizedBox(
+                  width: 56,
+                  height: 17,
+                  child: WaveformAnimated(
+                    player: player,
+                    waveformValue: waveformValue ?? Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []), 
+                    isPlaying: isPlaying,
                   ),
-                ) : SizedBox.shrink()
-              ),
+                );
+              },
+            ),
             const SizedBox(width: 5),
             Text(
               '${service.music.length}',
@@ -301,20 +373,107 @@ class _CollapsedViewState extends State<_CollapsedView>
   }
 }
 
+class WaveformAnimated extends StatefulWidget {
+  final AudioPlayer player;
+  final Waveform waveformValue;
+  final ValueNotifier<bool> isPlaying;
+  const WaveformAnimated({super.key, required this.player, required this.waveformValue, required this.isPlaying});
+
+  @override
+  State<WaveformAnimated> createState() => _WaveformAnimatedState();
+}
+
+class _WaveformAnimatedState extends State<WaveformAnimated> with SingleTickerProviderStateMixin {
+  final List<double> _previousHeights = List.filled(60, 0.0, growable: true);
+  late final Ticker _ticker;
+  StreamSubscription? _positionSub;
+  final ValueNotifier<double> _visualPhase = ValueNotifier(0.0);
+  double _targetPhase = 0.0;
+
+  @override
+  void dispose() {
+    _positionSub?.cancel();
+    _ticker.dispose();
+    _visualPhase.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    widget.isPlaying.addListener(() {
+      if (!widget.isPlaying.value) {
+        _targetPhase = 0.0;
+      }
+    });
+
+    _positionSub = widget.player.positionStream.listen((position) {
+      final duration = widget.player.duration;
+      if (duration == null || duration.inMilliseconds <= 0) return;
+      _targetPhase = (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
+    });
+
+    _ticker = createTicker((Duration elapsed) {
+      if (!widget.isPlaying.value) {
+        _visualPhase.value += 0.000001;
+        return;
+      }
+      _visualPhase.value = _visualPhase.value + (_targetPhase - _visualPhase.value) * 0.95;
+    });
+    _ticker.start();
+  }
+
+  Timer? _stopTimer;
+
+  void handlePause(bool isPlayingValue) {
+    _stopTimer?.cancel();
+
+    if (!isPlayingValue) {
+      _stopTimer = Timer(const Duration(seconds: 3), () {
+        if (!isPlayingValue) {
+          _ticker.stop();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder(
+      valueListenable: widget.isPlaying,
+      builder: (_, isPlayingValue, _) {
+        handlePause(isPlayingValue);
+        return ValueListenableBuilder(
+          valueListenable: _visualPhase,
+          builder: (_, visualPhaseValue, _) => CustomPaint(
+            painter: WaveformPainter(
+              widget.waveformValue,
+              phase: visualPhaseValue,
+              previousHeights: _previousHeights, 
+              isPlayng: isPlayingValue,
+            ),
+          )
+        );
+      }
+    );
+  }
+}
+
 class WaveformPainter extends CustomPainter {
   final Waveform waveform;
   final double phase;
   final Color color;
+  final bool isPlayng;
   final List<double> previousHeights;
 
   WaveformPainter(
     this.waveform, {
     required this.previousHeights,
     this.phase = 0.0,
-    this.color = Colors.white,
+    this.color = Colors.white, 
+    required this.isPlayng,
   });
-
-  double _ease(double t) => t * t * (3 - 2 * t);
 
   double _sample(List<int> samples, double index) {
     final int i0 = index.floor().clamp(0, samples.length - 1);
@@ -326,7 +485,6 @@ class WaveformPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final samples = waveform.data;
-    if (samples.isEmpty) return;
 
     final centerY = size.height / 2;
     const double barWidth = 3.0;
@@ -337,12 +495,34 @@ class WaveformPainter extends CustomPainter {
 
     if (previousHeights.length != barCount) {
       previousHeights.clear();
-      previousHeights.addAll(List.filled(barCount, 4.0));
+      previousHeights.addAll(List.filled(barCount, 0.0));
     }
 
     final paint = Paint()
       ..strokeWidth = barWidth
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.round
+      ..color = Colors.white;
+
+
+    if (!isPlayng) {
+      for (int i = 0; i < barCount; i++) {
+        final double x = i * step + barWidth / 2;
+
+        double currentHeight = previousHeights[i];
+        double next = _lerpEase(currentHeight, 0.0, 0.05);
+        currentHeight = _smoothDamp(currentHeight, next, 0.15);
+        previousHeights[i] = currentHeight;
+
+        paint.color = color.withOpacity(0.6);
+
+        canvas.drawLine(
+          Offset(x, centerY - currentHeight),
+          Offset(x, centerY + currentHeight),
+          paint,
+        );
+      }
+      return;
+    }
 
     final double offset = phase * samples.length;
 
@@ -353,21 +533,15 @@ class WaveformPainter extends CustomPainter {
       final double sampleIndex = (offset + i * stepSample) % samples.length;
 
       double normalized = (_sample(samples, sampleIndex) / 255.0).clamp(0.0, 1.0);
-      normalized = _ease(normalized);
+      normalized = _easeOut(normalized);
 
       final double maxBarHalf = size.height * 0.45;
-      final double targetHeight = (normalized * maxBarHalf).clamp(4.0, maxBarHalf);
+      final double targetHeight = (normalized * maxBarHalf).clamp(0.0, maxBarHalf);
 
       double currentHeight = previousHeights[i];
-      currentHeight = _lerp(currentHeight, targetHeight, 0.28);
+      double next = _lerpEase(currentHeight, targetHeight, 0.08);
+      currentHeight = _smoothDamp(currentHeight, next, 0.15);
       previousHeights[i] = currentHeight;
-
-      final double centerDist = ((i / barCount) - 0.5).abs() * 2.0;
-      final double fade = pow(1.0 - centerDist, 1.5).toDouble();
-
-      paint.color = color.withOpacity(
-        (0.4 + normalized * 0.6) * fade,
-      );
 
       canvas.drawLine(
         Offset(x, centerY - currentHeight),
@@ -377,7 +551,22 @@ class WaveformPainter extends CustomPainter {
     }
   }
 
-  double _lerp(double a, double b, double t) => a + (b - a) * t;
+  double _smoothDamp(double current, double target, double maxDelta) {
+    final delta = target - current;
+    if (delta.abs() > maxDelta) {
+      return current + maxDelta * delta.sign;
+    }
+    return target;
+  }
+
+  double _easeOut(double t) {
+    return 1 - pow(1 - t, 4).toDouble();
+  }
+
+  double _lerpEase(double a, double b, double t) {
+    final easedT = _easeOut(t);
+    return a + (b - a) * easedT;
+  }
 
   @override
   bool shouldRepaint(covariant WaveformPainter oldDelegate) => true;
