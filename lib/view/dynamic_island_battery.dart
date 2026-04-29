@@ -87,6 +87,7 @@ class _ExpandedBattery extends StatelessWidget {
               child: _BatteryIcon(
                 width: 76.0,
                 height: 33.0,
+                border: 7,
                 level: level,
                 mainAppController: mainAppController,
               ),
@@ -114,13 +115,15 @@ class _BatteryIcon extends StatefulWidget {
   final int level;
   final double width;
   final double height;
+  final double border;
   final MainAppController mainAppController;
 
   const _BatteryIcon({
-    this.width = 24.0,
-    this.height = 12.4,
+    this.width = 26.0,
+    this.height = 14.4,
     required this.level,
-    required this.mainAppController,
+    required this.mainAppController, 
+    this.border = 3,
   });
 
   @override
@@ -177,12 +180,14 @@ class _BatteryIconState extends State<_BatteryIcon> {
         Stack(
           alignment: AlignmentGeometry.center,
           children: [
-            Container(
+            AnimatedContainer(
+              curve: Curves.easeInOut,
+              duration: Duration(seconds: 1),
               width: widget.width,
               height: widget.height,
               decoration: BoxDecoration(
                 border: Border.all(color: Colors.white54, width: 0.5),
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(widget.border+2),
               ),
               padding: const EdgeInsets.all(2),
               child: FractionallySizedBox(
@@ -193,7 +198,7 @@ class _BatteryIconState extends State<_BatteryIcon> {
                   curve: Curves.easeOut,
                   decoration: BoxDecoration(
                     color: _fillColor,
-                    borderRadius: BorderRadius.circular(3),
+                    borderRadius: BorderRadius.circular(widget.border),
                   ),
                 ),
               ),
@@ -205,7 +210,7 @@ class _BatteryIconState extends State<_BatteryIcon> {
               child: Icon(
                 CupertinoIcons.bolt_fill,
                 color: Colors.white,
-                size: widget.mainAppController.stateApp == IslandState.expanded ? 28 : 13,
+                size: widget.mainAppController.stateApp == IslandState.expanded ? 31 : 13,
               )
             ),
           ],
@@ -213,9 +218,9 @@ class _BatteryIconState extends State<_BatteryIcon> {
         Container(
           width: 3,
           height: widget.height * 0.4,
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white38,
-            borderRadius: BorderRadius.horizontal(right: Radius.circular(2)),
+            borderRadius: BorderRadius.horizontal(right: Radius.circular(widget.border - 1)),
           ),
         ),
       ],

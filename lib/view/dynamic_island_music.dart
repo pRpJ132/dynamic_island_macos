@@ -4,7 +4,6 @@ import 'dart:math';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_local_service.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_waveform/just_waveform.dart';
 import 'package:marquee/marquee.dart';
@@ -232,7 +231,7 @@ class _ExpandedView extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 18.0),
                 child: Column(
-                  spacing: 5,
+                  spacing: 2,
                   crossAxisAlignment: .end,
                   children: [
                     Flexible(
@@ -385,15 +384,16 @@ class WaveformAnimated extends StatefulWidget {
 
 class _WaveformAnimatedState extends State<WaveformAnimated> with SingleTickerProviderStateMixin {
   final List<double> _previousHeights = List.filled(60, 0.0, growable: true);
-  late final Ticker _ticker;
+  Timer? _timer;
   StreamSubscription? _positionSub;
   final ValueNotifier<double> _visualPhase = ValueNotifier(0.0);
   double _targetPhase = 0.0;
 
   @override
   void dispose() {
+    _stopTimer?.cancel();
     _positionSub?.cancel();
-    _ticker.dispose();
+    _timer?.cancel();
     _visualPhase.dispose();
     super.dispose();
   }
@@ -402,39 +402,39 @@ class _WaveformAnimatedState extends State<WaveformAnimated> with SingleTickerPr
   void initState() {
     super.initState();
 
-    widget.isPlaying.addListener(() {
-      if (!widget.isPlaying.value) {
-        _targetPhase = 0.0;
-      }
-    });
-
     _positionSub = widget.player.positionStream.listen((position) {
       final duration = widget.player.duration;
       if (duration == null || duration.inMilliseconds <= 0) return;
       _targetPhase = (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
     });
+    _startTimer();
+  }
 
-    _ticker = createTicker((Duration elapsed) {
+  void _startTimer() {
+    _timer = Timer.periodic(const Duration(milliseconds: 25), (timer) {
+      if (!mounted) return;
+
       if (!widget.isPlaying.value) {
         _visualPhase.value += 0.000001;
         return;
       }
-      _visualPhase.value = _visualPhase.value + (_targetPhase - _visualPhase.value) * 0.95;
+      _visualPhase.value += (_targetPhase - _visualPhase.value) * 0.95;
     });
-    _ticker.start();
   }
 
   Timer? _stopTimer;
-
   void handlePause(bool isPlayingValue) {
     _stopTimer?.cancel();
-
     if (!isPlayingValue) {
       _stopTimer = Timer(const Duration(seconds: 3), () {
-        if (!isPlayingValue) {
-          _ticker.stop();
+        if (!isPlayingValue && _timer != null && _timer!.isActive) {
+          _stopTimer = null;
+          _timer?.cancel();
+          _timer = null;
         }
       });
+    } else {
+      if (_timer == null) _startTimer();
     }
   }
 
@@ -491,7 +491,7 @@ class WaveformPainter extends CustomPainter {
     const double gap = 2.0;
     const double step = barWidth + gap;
 
-    final int barCount = (size.width / step).floor().clamp(8, 60);
+    final int barCount = (size.width / step).floor().clamp(8, 20);
 
     if (previousHeights.length != barCount) {
       previousHeights.clear();
@@ -509,8 +509,8 @@ class WaveformPainter extends CustomPainter {
         final double x = i * step + barWidth / 2;
 
         double currentHeight = previousHeights[i];
-        double next = _lerpEase(currentHeight, 0.0, 0.05);
-        currentHeight = _smoothDamp(currentHeight, next, 0.15);
+        double next = _lerpEase(currentHeight, 0.0, 0.7);
+        currentHeight = _smoothDamp(currentHeight, next, 0.4);
         previousHeights[i] = currentHeight;
 
         paint.color = color.withOpacity(0.6);
@@ -539,8 +539,8 @@ class WaveformPainter extends CustomPainter {
       final double targetHeight = (normalized * maxBarHalf).clamp(0.0, maxBarHalf);
 
       double currentHeight = previousHeights[i];
-      double next = _lerpEase(currentHeight, targetHeight, 0.08);
-      currentHeight = _smoothDamp(currentHeight, next, 0.15);
+      double next = _lerpEase(currentHeight, targetHeight, 0.2);
+      currentHeight = _smoothDamp(currentHeight, next, 0.5);
       previousHeights[i] = currentHeight;
 
       canvas.drawLine(
@@ -569,5 +569,5 @@ class WaveformPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant WaveformPainter oldDelegate) => true;
+  bool shouldRepaint(covariant WaveformPainter old) => true;
 }
