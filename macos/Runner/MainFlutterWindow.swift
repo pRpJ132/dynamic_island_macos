@@ -45,12 +45,12 @@ class MainFlutterWindow: NSWindow {
 
         RegisterGeneratedPlugins(registry: flutterViewController)
 
-        let channel = FlutterMethodChannel(
+        let channelWindowAnimation = FlutterMethodChannel(
             name: "window/animation",
             binaryMessenger: flutterViewController.engine.binaryMessenger
         )
 
-        channel.setMethodCallHandler { [weak self] call, result in
+        channelWindowAnimation.setMethodCallHandler { [weak self] call, result in
             guard let self = self else { return }
 
             switch call.method {
@@ -122,6 +122,24 @@ class MainFlutterWindow: NSWindow {
                 }
             default:
                 result(FlutterMethodNotImplemented)
+            }
+        }
+
+        let channelAppIcon = FlutterMethodChannel(
+            name: "app.icon",
+            binaryMessenger: flutterViewController.engine.binaryMessenger
+        )
+
+        channelAppIcon.setMethodCallHandler { call, result in
+            if call.method == "getIcon" {
+                guard let args = call.arguments as? [String: Any],
+                    let path = args["path"] as? String else {
+                result(nil)
+                return
+                }
+                let icon = NSWorkspace.shared.icon(forFile: path)
+                let tiffData = icon.tiffRepresentation
+                result(tiffData)
             }
         }
 

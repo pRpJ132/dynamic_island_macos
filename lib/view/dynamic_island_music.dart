@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
-import 'package:dynamic_lake_macos/service/musci_local_service.dart';
+import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_waveform/just_waveform.dart';
@@ -149,7 +149,7 @@ class _ExpandedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MusicLocalService>(
+    return Consumer<MusicService>(
       builder: (_, service, _) {
         final tracks = service.music;
         if (tracks.isEmpty) {
@@ -333,7 +333,7 @@ class _CollapsedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
-      child: Consumer<MusicLocalService>(
+      child: Consumer<MusicService>(
         builder: (_, service, _) => Row(
           mainAxisAlignment: mainAppController.isDynamicIsland
               ? MainAxisAlignment.end

@@ -1,50 +1,50 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class MusicLocalService extends ChangeNotifier {
-  static const String _key = 'music_list';
+class AppService extends ChangeNotifier {
+  static const String _key = 'app_list';
 
-  final List<String> _musicPaths = [];
+  final List<String> _appPaths = [];
 
-  List<String> get music => _musicPaths;
+  List<String> get apps => _appPaths;
 
-  MusicLocalService() {
-    loadMusic();
+  AppService() {
+    loadApp();
   }
 
-  Future<void> loadMusic() async {
+  Future<void> loadApp() async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_key) ?? [];
 
-    _musicPaths
+    _appPaths
       ..clear()
       ..addAll(list);
 
     notifyListeners();
   }
 
-  Future<void> addMusic(String path) async {
-    if (_musicPaths.contains(path)) return;
+  Future<void> addApp(String path) async {
+    if (_appPaths.contains(path)) return;
 
-    _musicPaths.add(path);
+    _appPaths.add(path);
     await _save();
     notifyListeners();
   }
 
-  Future<void> removeMusic(String path) async {
-    _musicPaths.remove(path);
+  Future<void> removeApp(String path) async {
+    _appPaths.remove(path);
     await _save();
     notifyListeners();
   }
 
   Future<void> clear() async {
-    _musicPaths.clear();
+    _appPaths.clear();
     await _save();
     notifyListeners();
   }
 
   Future<void> _save() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_key, _musicPaths);
+    await prefs.setStringList(_key, _appPaths);
   }
 }

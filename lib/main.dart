@@ -1,6 +1,7 @@
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/dynamic_island_main.dart';
-import 'package:dynamic_lake_macos/service/musci_local_service.dart';
+import 'package:dynamic_lake_macos/service/app_service.dart';
+import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:provider/provider.dart';
@@ -15,7 +16,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => MainAppController()),
-        ChangeNotifierProvider(create: (_) => MusicLocalService()),
+        ChangeNotifierProvider(create: (_) => MusicService()),
+        ChangeNotifierProvider(create: (_) => AppService()),
       ],
       child: DynamicIslandApp(),
     ),
