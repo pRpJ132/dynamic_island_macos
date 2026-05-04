@@ -6,7 +6,7 @@ class MusicLocalService extends ChangeNotifier {
 
   final List<String> _musicPaths = [];
 
-  List<String> get music => List.unmodifiable(_musicPaths);
+  List<String> get music => _musicPaths;
 
   MusicLocalService() {
     loadMusic();

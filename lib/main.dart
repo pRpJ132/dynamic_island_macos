@@ -1,6 +1,5 @@
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/dynamic_island_main.dart';
-import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/musci_local_service.dart';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -11,11 +10,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await hotKeyManager.unregisterAll();
-
-  await windowManager.waitUntilReadyToShow(WindowOptions(
-    size: SizeWindowObject().collapsedSize,
-    center: true,
-  ), () {});
 
   runApp(
     MultiProvider(

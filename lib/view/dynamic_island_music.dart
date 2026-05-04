@@ -18,10 +18,10 @@ class DynamicIslandMusic extends StatefulWidget {
 }
 
 class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
-  final AudioPlayer _player = AudioPlayer();
-  final ValueNotifier<String> _currentTrack = ValueNotifier("");
-  final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
-  final ValueNotifier<Waveform> _waveforms = ValueNotifier(Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []));
+  static final AudioPlayer _player = AudioPlayer();
+  static final ValueNotifier<String> _currentTrack = ValueNotifier("");
+  static final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
+  static final ValueNotifier<Waveform> _waveforms = ValueNotifier(Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []));
   late final StreamSubscription _stateSubscription;
 
   @override
@@ -42,10 +42,6 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
   @override
   void dispose() {
     _stateSubscription.cancel();
-    _player.dispose();
-    _currentTrack.dispose();
-    _isPlaying.dispose();
-    _waveforms.dispose();
     super.dispose();
   }
 
@@ -100,7 +96,7 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
         ),
         child: mainAppController.stateApp == IslandState.expanded
             ? _ExpandedView(
-                key: const ValueKey('expanded'),
+                key: ValueKey('expanded_${DateTime.now()}'),
                 mainAppController: mainAppController,
                 isPlaying: _isPlaying,
                 currentTrack: _currentTrack,
@@ -110,7 +106,7 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
                 player: _player,
               )
             : _CollapsedView(
-                key: const ValueKey('collapsed'),
+                key: ValueKey('collapsed_${DateTime.now()}'),
                 mainAppController: mainAppController,
                 player: _player,
                 isPlaying: _isPlaying,
@@ -323,7 +319,7 @@ class _ExpandedView extends StatelessWidget {
 class _CollapsedView extends StatelessWidget {
   final MainAppController mainAppController;
   final AudioPlayer player;
-  final ValueNotifier<Waveform?> waveform;
+  final ValueNotifier<Waveform> waveform;
   final ValueNotifier<bool> isPlaying;
 
   const _CollapsedView({
@@ -348,17 +344,17 @@ class _CollapsedView extends StatelessWidget {
               valueListenable: waveform,
               builder: (_, waveformValue, _) {
                 return SizedBox(
-                  width: 56,
+                  width: 39,
                   height: 17,
                   child: WaveformAnimated(
                     player: player,
-                    waveformValue: waveformValue ?? Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []), 
+                    waveformValue: waveformValue, 
                     isPlaying: isPlaying,
                   ),
                 );
               },
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 9),
             Text(
               '${service.music.length}',
               style: const TextStyle(color: Colors.white, fontSize: 16),

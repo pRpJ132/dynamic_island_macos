@@ -28,7 +28,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   late MainAppController _mainAppController;
   static ValueNotifier<int> pageIndex = ValueNotifier(0);
 
-  void initKeyBind(BuildContext context) async {
+  void initKeyBind() async {
     await hotKeyManager.register(
       HotKey(
         key: PhysicalKeyboardKey.keyJ,
@@ -89,7 +89,12 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
               forward: true,
             );
           });
-          await notchChannel.invokeMethod('moveToNotch');
+          await notchChannel.invokeMethod('moveToNotch', {
+            'width': sizeWindowObjects[pageIndex.value].collapsedSize.width,
+            'height': sizeWindowObjects[pageIndex.value].collapsedSize.height,
+            'height_dynamic_island': sizeWindowObjects[pageIndex.value].collapsedSizeBaseDynamicIsland.height,
+            'width_dynamic_island': sizeWindowObjects[pageIndex.value].collapsedSizeBaseDynamicIsland.width,
+          });
           _mainAppController.animatedChangeDynamicIsland = false;
         } catch (e) {
           print('Notch error: $e');
@@ -98,11 +103,20 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     );
   }
 
+  Future<void> initWindowSize() async {
+    await windowManager.waitUntilReadyToShow(WindowOptions(
+      size: sizeWindowObjects[pageIndex.value].collapsedSize,
+      center: true,
+    ), () {});
+  }
+
   @override
   void initState() {
     super.initState();
     _mainAppController = context.read<MainAppController>();
-    initKeyBind(context);
+    initKeyBind();
+    initWindowSize();
+    // Process.run('open', ['/Applications/Safari.app']);
   }
 
   final ValueNotifier<bool> _dragging = ValueNotifier(false);
@@ -114,7 +128,10 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   ];
 
   List<SizeWindowObject> sizeWindowObjects = [
-    SizeWindowObject(),
+    SizeWindowObject(
+      collapsedSize: Size(260, 50),
+      collapsedSizeBaseDynamicIsland: Size(420, 75)
+    ),
     SizeWindowObject(
       expandedSize: Size(200, 140),
       expandedSizeBaseDynamicIsland: Size(420, 160)
@@ -210,21 +227,6 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
               padding: EdgeInsets.symmetric(horizontal: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 24 : 20),
               child: Stack(
                 children: [
-                  if (mainAppController.isDynamicIsland)
-                  AnimatedPositioned(
-                    curve: Curves.easeInOut,
-                    duration: Duration(milliseconds: 650),
-                    left: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 3 : 10,
-                    top: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 20 : 10,
-                    child: Container(
-                      width: 9,
-                      height: 9,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle
-                      ),
-                    ),
-                  ),
                   child
                 ],
               )

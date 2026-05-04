@@ -19,92 +19,69 @@ class _DynamicIslandBatteryState extends State<DynamicIslandBattery> {
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: Consumer<MainAppController>(
-        builder: (_, mainAppController, _) => AnimatedContainer(
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-          ),
-          padding: EdgeInsets.symmetric(horizontal: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 24 : 20),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 450),
-            child: mainAppController.stateApp == IslandState.expanded
-                ? _ExpandedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController,)
-                : _CollapsedBattery(batteryLevel: mainAppController.batteryLevel, mainAppController: mainAppController),
-          ),
-        ),
+        builder: (_, mainAppController, _) => _batteryMovement(mainAppController)
       ),
     );
   }
-}
 
-class _CollapsedBattery extends StatelessWidget {
-  final ValueNotifier<int> batteryLevel;
-  final MainAppController mainAppController;
-  const _CollapsedBattery({required this.batteryLevel, required this.mainAppController});
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _batteryMovement(MainAppController mainAppController) {
     return ValueListenableBuilder<int>(
-      valueListenable: batteryLevel,
+      valueListenable: mainAppController.batteryLevel,
       builder: (_, level, _) {
-        return Row(
-          mainAxisAlignment: mainAppController.isDynamicIsland ? .end : .center,
-          children: [
-            Flexible(child: _BatteryIcon(level: level, mainAppController: mainAppController,)),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                '$level%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  height: 1,
+        final isExpanded = mainAppController.stateApp == IslandState.expanded;
+        return SizedBox(
+          height: isExpanded ? 80 : 20,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              AnimatedPadding(
+                duration: Duration(milliseconds: isExpanded ? 400 : 200),
+                curve: isExpanded ? Curves.decelerate : Curves.easeIn,
+                padding: EdgeInsets.only(
+                  right: mainAppController.isDynamicIsland ? isExpanded ? 0.0 : 33.0 : isExpanded ? 0 : 25,
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeInOut,
+                  alignment: mainAppController.isDynamicIsland ? isExpanded ? Alignment.center : Alignment.centerRight : Alignment.center,
+                  child: _BatteryIcon(
+                    height: isExpanded ? 33 : 14.4,
+                    width: isExpanded ? 76 : 26,
+                    border: isExpanded ? 7 : 3,
+                    level: level,
+                    mainAppController: mainAppController,
+                  ),
                 ),
               ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
 
-class _ExpandedBattery extends StatelessWidget {
-  final ValueNotifier<int> batteryLevel;
-  final MainAppController mainAppController;
-  const _ExpandedBattery({required this.batteryLevel, required this.mainAppController});
-
-  @override
-  Widget build(BuildContext context) {
-    return ValueListenableBuilder<int>(
-      valueListenable: batteryLevel,
-      builder: (_, level, _) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: _BatteryIcon(
-                width: 76.0,
-                height: 33.0,
-                border: 7,
-                level: level,
-                mainAppController: mainAppController,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Flexible(
-              child: Text(
-                '$level%',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w300,
-                  height: 1,
+              AnimatedPadding(
+                duration: const Duration(milliseconds: 500),
+                curve: Curves.decelerate,
+                padding: EdgeInsets.only(
+                  bottom: mainAppController.isDynamicIsland ? isExpanded ? 33.0 : 0.0 : 0.0,
+                  left: mainAppController.isDynamicIsland ? isExpanded ? 0 : 40 : isExpanded ? 0 : 45,
+                  top: mainAppController.isDynamicIsland ? isExpanded ? 8 : 0 : isExpanded ? 75 : 0
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.decelerate,
+                  alignment: mainAppController.isDynamicIsland ? isExpanded
+                      ? Alignment.bottomCenter
+                      : Alignment.centerRight : Alignment.center,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 500),
+                    curve: Curves.easeInOutCubic,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: isExpanded ? 18 : 12,
+                      height: 1,
+                    ),
+                    child: Text('$level%'),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
@@ -119,11 +96,11 @@ class _BatteryIcon extends StatefulWidget {
   final MainAppController mainAppController;
 
   const _BatteryIcon({
-    this.width = 26.0,
-    this.height = 14.4,
+    required this.width,
+    required this.height,
     required this.level,
     required this.mainAppController, 
-    this.border = 3,
+    required  this.border,
   });
 
   @override
@@ -182,7 +159,7 @@ class _BatteryIconState extends State<_BatteryIcon> {
           children: [
             AnimatedContainer(
               curve: Curves.easeInOut,
-              duration: Duration(seconds: 1),
+              duration: Duration(milliseconds: 500),
               width: widget.width,
               height: widget.height,
               decoration: BoxDecoration(
@@ -215,7 +192,9 @@ class _BatteryIconState extends State<_BatteryIcon> {
             ),
           ],
         ),
-        Container(
+        AnimatedContainer(
+          curve: Curves.easeInOut,
+          duration: Duration(milliseconds: 500),
           width: 3,
           height: widget.height * 0.4,
           decoration: BoxDecoration(

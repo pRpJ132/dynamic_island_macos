@@ -102,7 +102,22 @@ class MainFlutterWindow: NSWindow {
             switch call.method {
 
             case "moveToNotch":
-                self.moveToNotch() {
+                guard
+                    let args = call.arguments as? [String: Any],
+                    let width = args["width"] as? CGFloat,
+                    let height = args["height"] as? CGFloat,
+                    let widthDynamicIsland = args["width_dynamic_island"] as? CGFloat,
+                    let heightDynamicIsland = args["height_dynamic_island"] as? CGFloat
+                else {
+                    result(FlutterError(code: "BAD_ARGS", message: "Invalid args", details: nil))
+                    return
+                }
+                self.moveToNotch(
+                    width: width,
+                    height: height,
+                    widthDynamicIsland: widthDynamicIsland,
+                    heightDynamicIsland: heightDynamicIsland
+                ) {
                     result(true)
                 }
             default:
@@ -190,7 +205,7 @@ class MainFlutterWindow: NSWindow {
                                         screenFrame.maxX - newSize.width))
         }
 
-        self.springAnimate(to: newFrame, mass: 1, stiffness: 170, damping: 17) {
+        self.springAnimate(to: newFrame, mass: 1, stiffness: 300 / duration, damping: 30 / duration) {
             completion()
         }
     }
@@ -207,7 +222,13 @@ class MainFlutterWindow: NSWindow {
 
     private var oldFrame: NSRect?
 
-    func moveToNotch(completion: @escaping () -> Void) {
+    func moveToNotch(
+        width: CGFloat,
+        height: CGFloat,
+        widthDynamicIsland: CGFloat,
+        heightDynamicIsland: CGFloat,
+        completion: @escaping () -> Void
+    ) {
         guard let screen = self.screen else {
             completion()
             return
@@ -219,7 +240,7 @@ class MainFlutterWindow: NSWindow {
             isDynamicIsland = false
             islandAnchorX = nil
             islandAnchorY = nil
-            restoreWindow(completion: completion)
+            restoreWindow(width: width, height: height, completion: completion)
             oldFrame = nil
             return
         }
@@ -228,7 +249,7 @@ class MainFlutterWindow: NSWindow {
 
         if oldFrame == nil {
             let oldFrameSelf = self.frame
-            let oldSize = NSSize(width: 160, height: 50)
+            let oldSize = NSSize(width: width, height: height)
 
             let centerX = oldFrameSelf.midX
             let centerY = oldFrameSelf.midY
@@ -255,9 +276,9 @@ class MainFlutterWindow: NSWindow {
         self.styleMask = [.borderless, .fullSizeContentView]
         let moveFrame = NSRect(
             x: screenFrame.origin.x + (screenFrame.width - 160) / 2,
-            y: screenFrame.origin.y + screenFrame.height - 25,
+            y: screenFrame.origin.y + screenFrame.height - 20,
             width: 160,
-            height: 25
+            height: 20
         )
         springAnimate(to: moveFrame, mass: 1, stiffness: 220, damping: 25) {
             self.contentView?.subviews
@@ -265,10 +286,10 @@ class MainFlutterWindow: NSWindow {
                 .forEach { $0.removeFromSuperview() }
             let topEdge = screenFrame.origin.y + screenFrame.height  
             let expandFrame = NSRect(
-                x: screenFrame.origin.x + (screenFrame.width - 420) / 2,
-                y: topEdge - 45,
-                width: 420,
-                height: 45
+                x: screenFrame.origin.x + (screenFrame.width - widthDynamicIsland) / 2,
+                y: topEdge - heightDynamicIsland,
+                width: widthDynamicIsland,
+                height: heightDynamicIsland
             )
 
             self.springAnimate(to: expandFrame, mass: 1, stiffness: 150, damping: 15) {
@@ -277,9 +298,19 @@ class MainFlutterWindow: NSWindow {
         }
     }
 
-    private func restoreWindow(completion: @escaping () -> Void) {
-        guard let frame = oldFrame else { completion(); return }
+    private func restoreWindow(
+        width: CGFloat,
+        height: CGFloat,
+        completion: @escaping () -> Void
+    ) {
+        guard var frame = oldFrame else { completion(); return }
         guard let screen = self.screen else { completion(); return }
+        frame = NSRect(
+            x: frame.origin.x,
+            y: frame.origin.y,
+            width: width,
+            height: height
+        )
 
         let screenFrame = screen.frame
         let collapseFrame = NSRect(

@@ -139,7 +139,7 @@ class MainAppController extends ChangeNotifier {
     await _channel.invokeMethod('resize', {
       'width': size.width,
       'height': size.height,
-      'duration': duration ?? 0.2,
+      'duration': duration ?? 2.2,
       'curve': curve ?? 'easeInOut',
     });
   }
