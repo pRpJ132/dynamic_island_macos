@@ -29,6 +29,8 @@ class DynamicIslandApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    context.read<MusicService>();
+    context.read<AppService>();
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: DynamicIslandMain(),

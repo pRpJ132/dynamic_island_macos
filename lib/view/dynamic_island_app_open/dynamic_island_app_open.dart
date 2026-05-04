@@ -80,86 +80,86 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
                 alignment: isExpanded ? .center : .bottomCenter,
                 duration: Duration(milliseconds: 500),
                 curve: Curves.decelerate,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      onPressed: _canGoLeft ? _moveLeft : () {},
-                      icon: Icon(
-                        Icons.arrow_back_ios,
-                        size: 16,
-                        color: _canGoLeft ? Colors.white : Colors.white30,
-                      ),
-                    ),
-                                
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.decelerate,
-                      child: SizedBox(
-                        height: isExpanded ? _itemWidth + 20 : _itemWidth,
-                        width: 290,
-                        child: Consumer<AppService>(
-                          builder: (context, appServiceValue, child) {
-                            final apps = appServiceValue.apps;
-                            return ListView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              controller: _scrollController,
-                              scrollDirection: Axis.horizontal,
-                              itemCount: apps.length,
-                              itemBuilder: (context, index) {
-                                final appPath = apps[index];
-                                final appName = getAppName(appPath);
-                                return GestureDetector(
-                                  onTap: () => Process.run('open', [appPath]),
-                                  onSecondaryTap: () {
-                                    appServiceValue.removeApp(appPath);
-                                  },
-                                  child: AnimatedContainer(
-                                    height: _itemWidth,
-                                    width: _itemWidth,
-                                    margin: EdgeInsets.only(
-                                      right: index != apps.length - 1 ? _itemSpacing : 0,
-                                    ),
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Column(
-                                      mainAxisAlignment: .center,
-                                      children: [
-                                        _AppIcon(appPath: appPath),
-                                        Flexible(
-                                          child: AnimatedOpacity(
-                                            duration: Duration(milliseconds: 150),
-                                            curve: Curves.easeIn,
-                                            opacity: isExpanded ? 1 : 0,
-                                            child: Text(
-                                              appName,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(color: Colors.white, fontSize: 10),
+                child: Consumer<AppService>(
+                  builder: (context, appServiceValue, child) {
+                    final apps = appServiceValue.apps;
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: _canGoLeft ? _moveLeft : () {},
+                          icon: Icon(
+                            Icons.arrow_back_ios,
+                            size: 16,
+                            color: _canGoLeft ? Colors.white : Colors.white30,
+                          ),
+                        ),
+                                      
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 500),
+                          curve: Curves.decelerate,
+                          child: SizedBox(
+                            height: isExpanded ? _itemWidth + 20 : _itemWidth,
+                            width: 290,
+                            child: ListView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                controller: _scrollController,
+                                scrollDirection: Axis.horizontal,
+                                itemCount: apps.length,
+                                itemBuilder: (context, index) {
+                                  final appPath = apps[index];
+                                  final appName = getAppName(appPath);
+                                  return GestureDetector(
+                                    onTap: () => Process.run('open', [appPath]),
+                                    onSecondaryTap: () {
+                                      appServiceValue.removeApp(appPath);
+                                    },
+                                    child: AnimatedContainer(
+                                      height: _itemWidth,
+                                      width: _itemWidth,
+                                      margin: EdgeInsets.only(
+                                        right: index != apps.length - 1 ? _itemSpacing : 0,
+                                      ),
+                                      duration: const Duration(milliseconds: 200),
+                                      child: Column(
+                                        mainAxisAlignment: .center,
+                                        children: [
+                                          _AppIcon(appPath: appPath),
+                                          Flexible(
+                                            child: AnimatedOpacity(
+                                              duration: Duration(milliseconds: 150),
+                                              curve: Curves.easeIn,
+                                              opacity: isExpanded ? 1 : 0,
+                                              child: Text(
+                                                appName,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(color: Colors.white, fontSize: 10),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            );
-                          }
-                        ),
-                      ),
-                    ),
-                                
-                    IconButton(
-                      onPressed: _canGoRight ? _moveRight : () {},
-                      icon: Icon(
-                        Icons.arrow_forward_ios,
-                        size: 16,
-                        color: _canGoRight ? Colors.white : Colors.white30,
-                      ),
-                    ),
-                  ],
+                                  );
+                                },
+                              )
+                            ),
+                          ),
+                                      
+                          IconButton(
+                            onPressed: _canGoRight ? _moveRight : () {},
+                            icon: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: _canGoRight ? Colors.white : Colors.white30,
+                            ),
+                          ),
+                        ],
+                      );
+                    }
                 ),
               ),
               AnimatedPadding(
