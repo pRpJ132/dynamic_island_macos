@@ -181,13 +181,18 @@ class _BatteryIconState extends State<_BatteryIcon> {
               ),
             ),
             AnimatedOpacity(
-              opacity: _batteryState == BatteryState.charging ? 1 : 0,
+              opacity: _batteryState == BatteryState.charging ? 1 : 1,
               duration: Duration(milliseconds: 550),
               curve: Curves.easeOutCubic,
-              child: Icon(
-                CupertinoIcons.bolt_fill,
-                color: Colors.white,
-                size: widget.mainAppController.stateApp == IslandState.expanded ? 31 : 13,
+              child: AnimatedScale(
+                duration: Duration(milliseconds: 500),
+                curve: Curves.easeInOut,
+                scale: widget.mainAppController.stateApp == IslandState.expanded ? 2.4 : 1,
+                child: Icon(
+                  CupertinoIcons.bolt_fill,
+                  color: Colors.white,
+                  size: 12,
+                ),
               )
             ),
           ],

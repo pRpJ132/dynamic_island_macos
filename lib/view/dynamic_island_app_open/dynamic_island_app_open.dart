@@ -93,68 +93,67 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
                           icon: Icon(
                             Icons.arrow_back_ios,
                             size: 16,
-                            color: _canGoLeft ? Colors.white : Colors.white30,
+                            color: _canGoLeft ? Colors.white : const Color.fromARGB(255, 47, 47, 47),
                           ),
                         ),
                                       
-                        AnimatedSize(
+                        AnimatedContainer(
+                          height: isExpanded ? _itemWidth + 50 : _itemWidth,
+                          width: 290,
                           duration: const Duration(milliseconds: 500),
-                          curve: Curves.decelerate,
-                          child: SizedBox(
-                            height: isExpanded ? _itemWidth + 20 : _itemWidth,
-                            width: 290,
-                            child: ListView.builder(
-                                physics: const NeverScrollableScrollPhysics(),
-                                controller: _scrollController,
-                                scrollDirection: Axis.horizontal,
-                                itemCount: apps.length,
-                                itemBuilder: (context, index) {
-                                  final appPath = apps[index];
-                                  final appName = getAppName(appPath);
-                                  return GestureDetector(
-                                    onTap: () => Process.run('open', [appPath]),
-                                    onSecondaryTap: () {
-                                      appServiceValue.removeApp(appPath);
-                                    },
-                                    child: AnimatedContainer(
-                                      height: _itemWidth,
-                                      width: _itemWidth,
-                                      margin: EdgeInsets.only(
-                                        right: index != apps.length - 1 ? _itemSpacing : 0,
-                                      ),
-                                      duration: const Duration(milliseconds: 200),
-                                      child: Column(
-                                        mainAxisAlignment: .center,
-                                        children: [
-                                          _AppIcon(appPath: appPath),
-                                          Flexible(
-                                            child: AnimatedOpacity(
-                                              duration: Duration(milliseconds: 150),
-                                              curve: Curves.easeIn,
-                                              opacity: isExpanded ? 1 : 0,
-                                              child: Text(
-                                                appName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(color: Colors.white, fontSize: 10),
-                                              ),
+                          curve: Curves.easeOut,
+                          child: ListView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              controller: _scrollController,
+                              scrollDirection: Axis.horizontal,
+                              itemCount: apps.length,
+                              itemBuilder: (context, index) {
+                                final appPath = apps[index];
+                                final appName = getAppName(appPath);
+                                return GestureDetector(
+                                  onTap: () => Process.run('open', [appPath]),
+                                  onSecondaryTap: () {
+                                    appServiceValue.removeApp(appPath);
+                                  },
+                                  child: AnimatedContainer(
+                                    height: _itemWidth,
+                                    width: _itemWidth,
+                                    margin: EdgeInsets.only(
+                                      right: index != apps.length - 1 ? _itemSpacing : 0,
+                                    ),
+                                    duration: const Duration(milliseconds: 200),
+                                    child: Column(
+                                      mainAxisAlignment: .center,
+                                      children: [
+                                        _AppIcon(appPath: appPath),
+                                        Flexible(
+                                          child: AnimatedOpacity(
+                                            duration: Duration(milliseconds: 150),
+                                            curve: Curves.easeIn,
+                                            opacity: isExpanded ? 1 : 0,
+                                            child: Text(
+                                              textAlign: TextAlign.center,
+                                              appName,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(color: Colors.white, fontSize: 8),
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  );
-                                },
-                              )
-                            ),
+                                  ),
+                                );
+                              },
+                            )
                           ),
-                                      
+                          
                           IconButton(
                             onPressed: _canGoRight ? _moveRight : () {},
                             icon: Icon(
                               Icons.arrow_forward_ios,
                               size: 16,
-                              color: _canGoRight ? Colors.white : Colors.white30,
+                              color: _canGoRight ? Colors.white : const Color.fromARGB(255, 47, 47, 47),
                             ),
                           ),
                         ],
@@ -165,7 +164,7 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
               AnimatedPadding(
                 duration: Duration(milliseconds: 700),
                 curve: Curves.decelerate,
-                padding: EdgeInsetsGeometry.only(top: isExpanded ? 105 : 0) ,
+                padding: EdgeInsetsGeometry.only(top: isExpanded ? 120 : 70) ,
                 child: AnimatedAlign(
                   alignment: isExpanded ? .center : .bottomCenter,
                   duration: Duration(milliseconds: 700),

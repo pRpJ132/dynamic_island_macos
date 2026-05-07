@@ -13,7 +13,6 @@ class AppService extends ChangeNotifier {
   }
 
   Future<void> loadApp() async {
-    print("object");
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_key) ?? [];
 

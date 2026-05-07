@@ -13,7 +13,6 @@ class MusicService extends ChangeNotifier {
   }
 
   Future<void> loadMusic() async {
-    print("object");
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_key) ?? [];
 

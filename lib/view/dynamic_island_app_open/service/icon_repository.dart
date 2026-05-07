@@ -13,7 +13,7 @@ class DiskCache {
       await cacheDir.create(recursive: true);
     }
 
-    final name = Uri.encodeComponent(key);
+    final name = Uri.encodeComponent(key).split('/').last.replaceAll('.app', '');
     return File('${cacheDir.path}/cache_$name');
   }
 
