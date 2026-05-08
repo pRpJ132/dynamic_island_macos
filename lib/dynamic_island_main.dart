@@ -36,8 +36,14 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         modifiers: [HotKeyModifier.meta],
       ),
       keyDownHandler: (_) async {
+        if (_mainAppController.isDynamicIsland) {
+          _mainAppController.activatedHoverHide = !_mainAppController.activatedHoverHide;
+          if (_mainAppController.activatedHoverHide) {
+            await _mainAppController.requestState(IslandState.collapsed);
+          }
+          return;
+        }
         _mainAppController.clickThrough = !_mainAppController.clickThrough;
-        if (_mainAppController.isDynamicIsland) return;
         await windowManager.setIgnoreMouseEvents(
           _mainAppController.clickThrough,
           forward: true,
@@ -51,14 +57,8 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         modifiers: [HotKeyModifier.meta],
       ),
       keyDownHandler: (_) async {
-        if (_mainAppController.hideApp) {
-          await windowManager.show();
-          await windowManager.focus();
-          _mainAppController.hideApp = false;
-        } else {
-          await windowManager.hide();
-          _mainAppController.hideApp = true;
-        }
+        _mainAppController.activatedHide = !_mainAppController.activatedHide;
+        await _mainAppController.hidenApp();
       },
     );
 

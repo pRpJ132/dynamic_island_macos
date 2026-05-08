@@ -3,12 +3,15 @@ import 'package:battery_plus/battery_plus.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:window_manager/window_manager.dart';
 
 enum IslandState { collapsed, expanded }
 
 class MainAppController extends ChangeNotifier {
   bool hideApp = false;
   bool clickThrough = false;
+  bool activatedHide = false;
+  bool activatedHoverHide = false;
   SizeWindowObject sizeWindow = SizeWindowObject();
   Timer? _hoverPollTimer;
   Battery? battery;
@@ -74,7 +77,7 @@ class MainAppController extends ChangeNotifier {
   static const _channel = MethodChannel('window/animation');
 
   Future<void> _pollMousePosition() async {
-    if (!isDynamicIsland || _isAnimating || _animatedChangeDynamicIsland) return;
+    if (!isDynamicIsland || _isAnimating || _animatedChangeDynamicIsland || activatedHide) return;
     bool inside = false;
     try {
       inside = await _channel.invokeMethod<bool>('isMouseInsideWindow') ?? false;
@@ -84,7 +87,11 @@ class MainAppController extends ChangeNotifier {
     if (inside == _mouseInside) return;
 
     _mouseInside = inside;
-    _requestState(inside ? IslandState.expanded : IslandState.collapsed);
+    if (!activatedHoverHide) {
+      _requestState(inside ? IslandState.expanded : IslandState.collapsed);
+    } else{
+      !_mouseInside ? hidenApp(hiden: true) : hidenApp(hiden: false);
+    }
   }
 
   void _requestState(IslandState newState) {
@@ -142,5 +149,22 @@ class MainAppController extends ChangeNotifier {
       'duration': duration ?? 1.6,
       'curve': curve ?? 'easeInOut',
     });
+  }
+
+  Future<void> hidenApp({final bool? hiden}) async {
+    if (activatedHide) {
+      await windowManager.hide();
+      hideApp = true;
+      return;
+    }
+
+    if (hiden ?? hideApp) {
+      await windowManager.show();
+      await windowManager.focus();
+      hideApp = false;
+    } else {
+      await windowManager.hide();
+      hideApp = true;
+    }
   }
 }
