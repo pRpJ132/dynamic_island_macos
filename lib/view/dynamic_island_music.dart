@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
@@ -18,72 +17,6 @@ class DynamicIslandMusic extends StatefulWidget {
 }
 
 class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
-  static final AudioPlayer _player = AudioPlayer();
-  static final ValueNotifier<String> _currentTrack = ValueNotifier("");
-  static final ValueNotifier<bool> _isPlaying = ValueNotifier(false);
-  static final ValueNotifier<Waveform> _waveforms = ValueNotifier(Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []));
-  late final StreamSubscription _stateSubscription;
-
-  @override
-  void initState() {
-    super.initState();
-    _stateSubscription = _player.playerStateStream.listen((state) async {
-      final isPlaying = state.playing;
-      final isCompleted = state.processingState == ProcessingState.completed;
-      if (isCompleted) {
-        _isPlaying.value = false;
-        _currentTrack.value = "";
-      } else {
-        _isPlaying.value = isPlaying;
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _stateSubscription.cancel();
-    super.dispose();
-  }
-
-  Future<void> _play(String path) async {
-    try {
-      if (_currentTrack.value != path) {
-        await _player.setFilePath(path);
-        _currentTrack.value = path;
-        final wf = await extractWaveform(path);
-        if (wf != null && mounted) {
-          _waveforms.value = wf;
-        }
-        await _player.seek(Duration.zero);
-      }
-      await _player.play();
-    } catch (e) {
-      debugPrint('Audio error: $e');
-    }
-  }
-
-  Future<void> _pause() async {
-    await _player.pause();
-  }
-
-  Future<Waveform?> extractWaveform(String path) async {
-    try {
-      final waveformFile = File('$path.waveform');
-      final progressStream = JustWaveform.extract(
-        audioInFile: File(path),
-        waveOutFile: waveformFile,
-      );
-      await for (final progress in progressStream) {
-        if (progress.waveform != null) {
-          return progress.waveform;
-        }
-      }
-    } catch (e) {
-      debugPrint('Waveform error: $e');
-    }
-    return null;
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer<MainAppController>(
@@ -95,23 +28,12 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
           children: [...previousChildren, ?currentChild],
         ),
         child: mainAppController.stateApp == IslandState.expanded
-            ? _ExpandedView(
-                key: ValueKey('expanded_${DateTime.now()}'),
-                mainAppController: mainAppController,
-                isPlaying: _isPlaying,
-                currentTrack: _currentTrack,
-                onPlay: _play,
-                onPause: _pause,
-                waveform: _waveforms,
-                player: _player,
-              )
-            : _CollapsedView(
-                key: ValueKey('collapsed_${DateTime.now()}'),
-                mainAppController: mainAppController,
-                player: _player,
-                isPlaying: _isPlaying,
-                waveform: _waveforms,
-              ),
+          ? _ExpandedView(
+            mainAppController: mainAppController,
+          )
+          : _CollapsedView(
+            mainAppController: mainAppController,
+          ),
       ),
     );
   }
@@ -119,22 +41,9 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
 
 class _ExpandedView extends StatelessWidget {
   final MainAppController mainAppController;
-  final ValueNotifier<bool> isPlaying;
-  final ValueNotifier<String> currentTrack;
-  final Future<void> Function(String path) onPlay;
-  final Future<void> Function() onPause;
-  final ValueNotifier<Waveform> waveform;
-  final AudioPlayer player;
 
   const _ExpandedView({
-    super.key,
     required this.mainAppController,
-    required this.isPlaying,
-    required this.currentTrack,
-    required this.onPlay,
-    required this.onPause, 
-    required this.waveform, 
-    required this.player,
   });
 
   String formatDuration(Duration? d) {
@@ -149,6 +58,7 @@ class _ExpandedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final player = mainAppController.playerMusic;
     return Consumer<MusicService>(
       builder: (_, service, _) {
         final tracks = service.music;
@@ -177,12 +87,11 @@ class _ExpandedView extends StatelessWidget {
                     return ListTile(
                       dense: true,
                       leading: ValueListenableBuilder(
-                        valueListenable: currentTrack,
+                        valueListenable: mainAppController.currentTrack,
                         builder: (_, currentTrackValue, _) => ValueListenableBuilder<bool>(
-                          valueListenable: isPlaying,
+                          valueListenable: mainAppController.isPlayingMusic,
                           builder: (_, isPlayingValue, _) {
-                            final isCurrentAndPlaying =
-                                currentTrackValue == path && isPlayingValue;
+                            final isCurrentAndPlaying = currentTrackValue == path && isPlayingValue;
                             return IconButton(
                               icon: FIcon(
                                 isCurrentAndPlaying ? FA.FaPause : FA.FaPlay,
@@ -191,9 +100,9 @@ class _ExpandedView extends StatelessWidget {
                               ),
                               onPressed: () {
                                 if (isCurrentAndPlaying) {
-                                  onPause();
+                                  mainAppController.pauseMusic();
                                 } else {
-                                  onPlay(path);
+                                  mainAppController.playMusic(path);
                                 }
                               },
                             );
@@ -232,7 +141,7 @@ class _ExpandedView extends StatelessWidget {
                   children: [
                     Flexible(
                       child: ValueListenableBuilder(
-                        valueListenable: waveform,
+                        valueListenable: mainAppController.waveformsMusic,
                         builder: (_, waveformValue, _) {
                           return SizedBox(
                             width: 39,
@@ -240,7 +149,7 @@ class _ExpandedView extends StatelessWidget {
                             child: WaveformAnimated(
                               player: player,
                               waveformValue: waveformValue, 
-                              isPlaying: isPlaying,
+                              isPlaying: mainAppController.isPlayingMusic,
                             ),
                           );
                         },
@@ -271,7 +180,7 @@ class _ExpandedView extends StatelessWidget {
                                   final value = position.inMilliseconds.clamp(0, max).toDouble();
                               
                                   return ValueListenableBuilder(
-                                    valueListenable: currentTrack,
+                                    valueListenable: mainAppController.currentTrack,
                                     builder: (_, currentTrackValue, _) {
                                       return Slider(
                                         min: 0,
@@ -280,8 +189,8 @@ class _ExpandedView extends StatelessWidget {
                                         onChanged: (newValue) {
                                           player.seek(Duration(milliseconds: newValue.toInt()));
                                         },
-                                        onChangeStart: (value) => onPause(),
-                                        onChangeEnd: (value) => onPlay(currentTrackValue),
+                                        onChangeStart: (value) => mainAppController.pauseMusic(),
+                                        onChangeEnd: (value) => mainAppController.playMusic(currentTrackValue),
                                         activeColor: Colors.white,
                                         inactiveColor: Colors.grey,
                                       );
@@ -318,20 +227,14 @@ class _ExpandedView extends StatelessWidget {
 
 class _CollapsedView extends StatelessWidget {
   final MainAppController mainAppController;
-  final AudioPlayer player;
-  final ValueNotifier<Waveform> waveform;
-  final ValueNotifier<bool> isPlaying;
 
   const _CollapsedView({
-    super.key,
     required this.mainAppController,
-    required this.player,
-    required this.waveform, 
-    required this.isPlaying,
   });
 
   @override
   Widget build(BuildContext context) {
+    final player = mainAppController.playerMusic;
     return SizedBox.expand(
       child: Consumer<MusicService>(
         builder: (_, service, _) => Row(
@@ -341,7 +244,7 @@ class _CollapsedView extends StatelessWidget {
           children: [
             const SizedBox(width: 5),
             ValueListenableBuilder(
-              valueListenable: waveform,
+              valueListenable: mainAppController.waveformsMusic,
               builder: (_, waveformValue, _) {
                 return SizedBox(
                   width: 39,
@@ -349,7 +252,7 @@ class _CollapsedView extends StatelessWidget {
                   child: WaveformAnimated(
                     player: player,
                     waveformValue: waveformValue, 
-                    isPlaying: isPlaying,
+                    isPlaying: mainAppController.isPlayingMusic,
                   ),
                 );
               },
@@ -397,7 +300,6 @@ class _WaveformAnimatedState extends State<WaveformAnimated> with SingleTickerPr
   @override
   void initState() {
     super.initState();
-
     _positionSub = widget.player.positionStream.listen((position) {
       final duration = widget.player.duration;
       if (duration == null || duration.inMilliseconds <= 0) return;

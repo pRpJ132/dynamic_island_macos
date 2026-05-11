@@ -44,7 +44,7 @@ class _DynamicIslandBatteryState extends State<DynamicIslandBattery> {
                   duration: const Duration(milliseconds: 500),
                   curve: Curves.easeInOut,
                   alignment: mainAppController.isDynamicIsland ? isExpanded ? Alignment.center : Alignment.centerRight : Alignment.center,
-                  child: _BatteryIcon(
+                  child: BatteryIcon(
                     height: isExpanded ? 33 : 14.4,
                     width: isExpanded ? 76 : 26,
                     border: isExpanded ? 7 : 3,
@@ -88,14 +88,14 @@ class _DynamicIslandBatteryState extends State<DynamicIslandBattery> {
   }
 }
 
-class _BatteryIcon extends StatefulWidget {
+class BatteryIcon extends StatefulWidget {
   final int level;
   final double width;
   final double height;
   final double border;
-  final MainAppController mainAppController;
+  final MainAppController? mainAppController;
 
-  const _BatteryIcon({
+  const BatteryIcon({super.key, 
     required this.width,
     required this.height,
     required this.level,
@@ -104,17 +104,17 @@ class _BatteryIcon extends StatefulWidget {
   });
 
   @override
-  State<_BatteryIcon> createState() => _BatteryIconState();
+  State<BatteryIcon> createState() => _BatteryIconState();
 }
 
-class _BatteryIconState extends State<_BatteryIcon> {
+class _BatteryIconState extends State<BatteryIcon> {
   static BatteryState? _batteryState;
   StreamSubscription? _sub;
 
   @override
   void initState() {
     super.initState();
-    final battery = widget.mainAppController.battery;
+    Battery? battery = widget.mainAppController?.battery;
 
     _sub = battery?.onBatteryStateChanged.listen((state) {
       setState(() {
@@ -181,13 +181,13 @@ class _BatteryIconState extends State<_BatteryIcon> {
               ),
             ),
             AnimatedOpacity(
-              opacity: _batteryState == BatteryState.charging ? 1 : 1,
+              opacity: _batteryState == BatteryState.charging ? 1 : 0,
               duration: Duration(milliseconds: 550),
               curve: Curves.easeOutCubic,
               child: AnimatedScale(
                 duration: Duration(milliseconds: 500),
                 curve: Curves.easeInOut,
-                scale: widget.mainAppController.stateApp == IslandState.expanded ? 2.4 : 1,
+                scale: widget.mainAppController?.stateApp == IslandState.expanded ? 2.4 : 1,
                 child: Icon(
                   CupertinoIcons.bolt_fill,
                   color: Colors.white,

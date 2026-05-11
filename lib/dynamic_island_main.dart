@@ -7,10 +7,9 @@ import 'package:dynamic_lake_macos/service/app_service.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_app_open/dynamic_island_app_open.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_battery.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_drop_file.dart';
+import 'package:dynamic_lake_macos/view/dynamic_island_main_widgets.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_music.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_time.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -121,8 +120,9 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
 
   final ValueNotifier<bool> _dragging = ValueNotifier(false);
   List<Widget> pageDynamicIsland = [
-    DynamicIslandTime(),
-    DynamicIslandBattery(),
+    DynamicIslandMainWidgets(),
+    // DynamicIslandTime(),
+    // DynamicIslandBattery(),
     // DynamicIslandTimer(),
     DynamicIslandMusic(),
     DynamicIslandAppOpen(),
@@ -133,10 +133,14 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       collapsedSize: Size(260, 50),
       collapsedSizeBaseDynamicIsland: Size(420, 75)
     ),
-    SizeWindowObject(
-      expandedSize: Size(200, 140),
-      expandedSizeBaseDynamicIsland: Size(420, 160)
-    ),
+    // SizeWindowObject(
+    //   collapsedSize: Size(260, 50),
+    //   collapsedSizeBaseDynamicIsland: Size(420, 75)
+    // ),
+    // SizeWindowObject(
+    //   expandedSize: Size(200, 140),
+    //   expandedSizeBaseDynamicIsland: Size(420, 160)
+    // ),
     // SizeWindowObject(
     //   expandedSize: Size(200, 140),
     //   // expandedSizeBaseDynamicIsland: Size(280, 130)

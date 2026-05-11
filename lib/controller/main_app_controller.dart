@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:just_waveform/just_waveform.dart';
 import 'package:window_manager/window_manager.dart';
 
 enum IslandState { collapsed, expanded }
@@ -14,7 +17,8 @@ class MainAppController extends ChangeNotifier {
   bool activatedHoverHide = false;
   SizeWindowObject sizeWindow = SizeWindowObject();
   Timer? _hoverPollTimer;
-  Battery? battery;
+  late StreamSubscription _sub;
+  late Battery battery;
   ValueNotifier<int> batteryLevel = ValueNotifier(100);
 
   bool _animatedChangeDynamicIsland = false;
@@ -49,12 +53,19 @@ class MainAppController extends ChangeNotifier {
     notifyListeners();
   }
 
-  late StreamSubscription _sub;
   MainAppController() {
     battery = Battery();
     _sub = Stream.periodic(const Duration(seconds: 1)).listen((_) async {
-      final level = await battery!.batteryLevel;
+      final level = await battery.batteryLevel;
       batteryLevel.value = level;
+    });
+    stateSubscription = playerMusic.playerStateStream.listen((state) async {
+      if (state.processingState == ProcessingState.completed) {
+        isPlayingMusic.value = false;
+        currentTrack.value = "";
+      } else {
+        isPlayingMusic.value = state.playing;
+      }
     });
   }
 
@@ -166,5 +177,52 @@ class MainAppController extends ChangeNotifier {
       await windowManager.hide();
       hideApp = true;
     }
+  }
+
+
+
+  final AudioPlayer playerMusic = AudioPlayer();
+  final ValueNotifier<String> currentTrack = ValueNotifier("");
+  final ValueNotifier<bool> isPlayingMusic = ValueNotifier(false);
+  final ValueNotifier<Waveform> waveformsMusic = ValueNotifier(Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []));
+  late final StreamSubscription stateSubscription;
+
+  Future<void> playMusic(String path) async {
+    try {
+      if (currentTrack.value != path) {
+        await playerMusic.setFilePath(path);
+        currentTrack.value = path;
+        final wf = await _extractWaveform(path);
+        if (wf != null) {
+          waveformsMusic.value = wf;
+        }
+        await playerMusic.seek(Duration.zero);
+      }
+      await playerMusic.play();
+    } catch (e) {
+      debugPrint('Audio error: $e');
+    }
+  }
+
+  Future<void> pauseMusic() async {
+    await playerMusic.pause();
+  }
+  
+  Future<Waveform?> _extractWaveform(String path) async {
+    try {
+      final waveformFile = File('$path.waveform');
+      final progressStream = JustWaveform.extract(
+        audioInFile: File(path),
+        waveOutFile: waveformFile,
+      );
+      await for (final progress in progressStream) {
+        if (progress.waveform != null) {
+          return progress.waveform;
+        }
+      }
+    } catch (e) {
+      debugPrint('Waveform error: $e');
+    }
+    return null;
   }
 }
