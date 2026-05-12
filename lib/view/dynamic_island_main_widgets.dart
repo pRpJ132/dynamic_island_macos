@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
+import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_battery.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_music.dart';
 import 'package:flutter/material.dart';
@@ -14,7 +15,6 @@ class DynamicIslandMainWidgets extends StatefulWidget {
 }
 
 class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
-  late final _mainAppController = context.read<MainAppController>();
   late Timer _clockTimer;
   final ValueNotifier<String> _time = ValueNotifier("");
 
@@ -92,61 +92,61 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                 );
               }
             ),
-            ValueListenableBuilder(
-              valueListenable: mainAppController.isPlayingMusic,
-              builder: (_, isPlayingMusicValue, _) {
-                return Row(
-                  mainAxisAlignment: isPlayingMusicValue ? .spaceBetween : .center,
-                  children: [
-                    if (isPlayingMusicValue)
-                    _buildMusicWidget(isExpanded, mainAppController),
-                    Flexible(
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 450),
-                        curve: Curves.easeOut,
-                        padding: EdgeInsets.only(
-                          top: isPlayingMusicValue && isExpanded ? 35 : 0,
-                          bottom: isExpanded ? 0 : isPlayingMusicValue ? 5.3 : 18,
-                        ),
-                        child: ValueListenableBuilder<String>(
-                          valueListenable: _time,
-                          builder: (_, value, _) {
-                            return AnimatedAlign(
-                              duration: const Duration(milliseconds: 450),
-                              curve: Curves.easeOut,
-                              alignment: isExpanded
-                                  ? isPlayingMusicValue ? Alignment.topCenter : Alignment.center
-                                  : Alignment.bottomCenter,
-                              child: AnimatedDefaultTextStyle(
+            Consumer<MusicService>(
+              builder: (_, musicService, _) => ValueListenableBuilder(
+                valueListenable: musicService.isPlayingMusic,
+                builder: (_, isPlayingMusicValue, _) {
+                  return Row(
+                    mainAxisAlignment: isPlayingMusicValue ? .spaceBetween : .center,
+                    children: [
+                      if (isPlayingMusicValue)
+                      _buildMusicWidget(isExpanded, musicService),
+                      Flexible(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 450),
+                          curve: Curves.easeOut,
+                          padding: EdgeInsets.only(
+                            top: isPlayingMusicValue && isExpanded ? 25 : 0,
+                            bottom: isExpanded ? 0 : isPlayingMusicValue ? 5.3 : 18,
+                          ),
+                          child: ValueListenableBuilder<String>(
+                            valueListenable: _time,
+                            builder: (_, value, _) {
+                              return AnimatedAlign(
                                 duration: const Duration(milliseconds: 450),
                                 curve: Curves.easeOut,
-                                style: TextStyle(
-                                  color: Colors.white.withOpacity(
-                                    isExpanded ? 0.9 : 1,
+                                alignment: isExpanded && !isPlayingMusicValue ? Alignment.center : isPlayingMusicValue && isExpanded ? Alignment.topCenter : Alignment.bottomCenter,
+                                child: AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 450),
+                                  curve: Curves.easeOut,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(
+                                      isExpanded ? 0.9 : 1,
+                                    ),
+                                    fontSize: isExpanded ? isPlayingMusicValue ? 18 : 28 : 14,
+                                    fontWeight: isExpanded
+                                        ? FontWeight.w300
+                                        : FontWeight.w400,
                                   ),
-                                  fontSize: isExpanded ? isPlayingMusicValue ? 18 : 28 : 14,
-                                  fontWeight: isExpanded
-                                      ? FontWeight.w300
-                                      : FontWeight.w400,
-                                ),
-                                child: SizedBox(
-                                  width: isPlayingMusicValue ? 100 : null,
-                                  child: Text(
-                                    textAlign: TextAlign.center,
-                                    isPlayingMusicValue ? "${value.substring(0, 8)} ${value.substring(10)}" : value,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                  child: SizedBox(
+                                    width: isPlayingMusicValue ? 100 : null,
+                                    child: Text(
+                                      textAlign: TextAlign.center,
+                                      isPlayingMusicValue ? "${value.substring(0, 8)} ${value.substring(10)}" : value,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
                                 ),
-                              ),
-                            );
-                          },
+                              );
+                            },
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              }
+                    ],
+                  );
+                }
+              ),
             ),
           ],
         );
@@ -156,10 +156,10 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
 
   Widget _buildMusicWidget(
     bool isExpanded,
-    MainAppController mainAppController
+    MusicService musicService
   ) {
     return Flexible(
-      flex: 2,
+      flex: 3,
       child: AnimatedPadding(
         duration: Duration(milliseconds: 330),
         curve: Curves.easeInOut,
@@ -186,15 +186,15 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                       curve: Curves.easeInOut,
                       alignment: isExpanded ? AlignmentGeometry.bottomRight : AlignmentGeometry.bottomLeft,
                       child: ValueListenableBuilder(
-                        valueListenable: mainAppController.waveformsMusic,
+                        valueListenable: musicService.waveformsMusic,
                         builder: (_, waveformValue, _) {
                           return SizedBox(
                             width: 39,
                             height: 17,
                             child: WaveformAnimated(
-                              player: _mainAppController.playerMusic,
+                              player: musicService.playerMusic,
                               waveformValue: waveformValue, 
-                              isPlaying: mainAppController.isPlayingMusic,
+                              isPlaying: musicService.isPlayingMusic,
                             ),
                           );
                         },
@@ -210,10 +210,10 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                   SizedBox(
                     width: 43,
                     child: StreamBuilder<Duration?>(
-                      stream: mainAppController.playerMusic.durationStream,
+                      stream: musicService.playerMusic.durationStream,
                       builder: (context, snapshot) {
                         return Text(
-                          formatDuration(mainAppController.playerMusic.duration ?? Duration.zero),
+                          formatDuration(musicService.playerMusic.duration ?? Duration.zero),
                           style: const TextStyle(color: Colors.white),
                         );
                       },
@@ -223,23 +223,23 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                     child: SizedBox(
                       height: 25,
                       child: StreamBuilder<Duration>(
-                        stream: mainAppController.playerMusic.positionStream,
+                        stream: musicService.playerMusic.positionStream,
                         builder: (context, snapshot) {
                           final position = snapshot.data ?? Duration.zero;
-                          final duration = mainAppController.playerMusic.duration ?? Duration.zero;
+                          final duration = musicService.playerMusic.duration ?? Duration.zero;
                       
                           final max = duration.inMilliseconds.toDouble();
                           final value = position.inMilliseconds.clamp(0, max).toDouble();
                       
                           return ValueListenableBuilder(
-                            valueListenable: mainAppController.currentTrack,
+                            valueListenable: musicService.currentTrack,
                             builder: (_, currentTrackValue, _) {
                               return Slider(
                                 min: 0,
                                 max: max == 0 ? 1 : max,
                                 value: value,
                                 onChanged: (newValue) {
-                                  mainAppController.playerMusic.seek(Duration(milliseconds: newValue.toInt()));
+                                  musicService.playerMusic.seek(Duration(milliseconds: newValue.toInt()));
                                 },
                                 activeColor: Colors.white,
                                 inactiveColor: Colors.grey,
@@ -253,7 +253,7 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                   SizedBox(
                     width: 43,
                     child: StreamBuilder<Duration>(
-                      stream: mainAppController.playerMusic.positionStream,
+                      stream: musicService.playerMusic.positionStream,
                       builder: (context, snapshot) {
                         final position = snapshot.data ?? Duration.zero;
                     

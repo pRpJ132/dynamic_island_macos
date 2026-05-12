@@ -20,30 +20,33 @@ class _DynamicIslandMusicState extends State<DynamicIslandMusic> {
   @override
   Widget build(BuildContext context) {
     return Consumer<MainAppController>(
-      builder: (_, mainAppController, _) => AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        layoutBuilder: (currentChild, previousChildren) => Stack(
-          children: [...previousChildren, ?currentChild],
-        ),
-        child: mainAppController.stateApp == IslandState.expanded
-          ? _ExpandedView(
-            mainAppController: mainAppController,
-          )
-          : _CollapsedView(
-            mainAppController: mainAppController,
+      builder: (_, mainAppController, _) => Consumer<MusicService>(
+        builder: (_, musicService, _) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          layoutBuilder: (currentChild, previousChildren) => Stack(
+            children: [...previousChildren, ?currentChild],
           ),
+          child: mainAppController.stateApp == IslandState.expanded
+            ? _ExpandedView(
+              musicService: musicService,
+            )
+            : _CollapsedView(
+              mainAppController: mainAppController,
+              musicService: musicService
+            ),
+        ),
       ),
     );
   }
 }
 
 class _ExpandedView extends StatelessWidget {
-  final MainAppController mainAppController;
+  final MusicService musicService;
 
   const _ExpandedView({
-    required this.mainAppController,
+    required this.musicService,
   });
 
   String formatDuration(Duration? d) {
@@ -58,7 +61,7 @@ class _ExpandedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final player = mainAppController.playerMusic;
+    final player = musicService.playerMusic;
     return Consumer<MusicService>(
       builder: (_, service, _) {
         final tracks = service.music;
@@ -87,9 +90,9 @@ class _ExpandedView extends StatelessWidget {
                     return ListTile(
                       dense: true,
                       leading: ValueListenableBuilder(
-                        valueListenable: mainAppController.currentTrack,
+                        valueListenable: musicService.currentTrack,
                         builder: (_, currentTrackValue, _) => ValueListenableBuilder<bool>(
-                          valueListenable: mainAppController.isPlayingMusic,
+                          valueListenable: musicService.isPlayingMusic,
                           builder: (_, isPlayingValue, _) {
                             final isCurrentAndPlaying = currentTrackValue == path && isPlayingValue;
                             return IconButton(
@@ -100,9 +103,9 @@ class _ExpandedView extends StatelessWidget {
                               ),
                               onPressed: () {
                                 if (isCurrentAndPlaying) {
-                                  mainAppController.pauseMusic();
+                                  musicService.pauseMusic();
                                 } else {
-                                  mainAppController.playMusic(path);
+                                  musicService.playMusic(path);
                                 }
                               },
                             );
@@ -141,7 +144,7 @@ class _ExpandedView extends StatelessWidget {
                   children: [
                     Flexible(
                       child: ValueListenableBuilder(
-                        valueListenable: mainAppController.waveformsMusic,
+                        valueListenable: musicService.waveformsMusic,
                         builder: (_, waveformValue, _) {
                           return SizedBox(
                             width: 39,
@@ -149,7 +152,7 @@ class _ExpandedView extends StatelessWidget {
                             child: WaveformAnimated(
                               player: player,
                               waveformValue: waveformValue, 
-                              isPlaying: mainAppController.isPlayingMusic,
+                              isPlaying: musicService.isPlayingMusic,
                             ),
                           );
                         },
@@ -180,7 +183,7 @@ class _ExpandedView extends StatelessWidget {
                                   final value = position.inMilliseconds.clamp(0, max).toDouble();
                               
                                   return ValueListenableBuilder(
-                                    valueListenable: mainAppController.currentTrack,
+                                    valueListenable: musicService.currentTrack,
                                     builder: (_, currentTrackValue, _) {
                                       return Slider(
                                         min: 0,
@@ -189,8 +192,8 @@ class _ExpandedView extends StatelessWidget {
                                         onChanged: (newValue) {
                                           player.seek(Duration(milliseconds: newValue.toInt()));
                                         },
-                                        onChangeStart: (value) => mainAppController.pauseMusic(),
-                                        onChangeEnd: (value) => mainAppController.playMusic(currentTrackValue),
+                                        onChangeStart: (value) => musicService.pauseMusic(),
+                                        onChangeEnd: (value) => musicService.playMusic(currentTrackValue),
                                         activeColor: Colors.white,
                                         inactiveColor: Colors.grey,
                                       );
@@ -227,14 +230,16 @@ class _ExpandedView extends StatelessWidget {
 
 class _CollapsedView extends StatelessWidget {
   final MainAppController mainAppController;
+  final MusicService musicService;
 
   const _CollapsedView({
-    required this.mainAppController,
+    required this.mainAppController, 
+    required this.musicService,
   });
 
   @override
   Widget build(BuildContext context) {
-    final player = mainAppController.playerMusic;
+    final player = musicService.playerMusic;
     return SizedBox.expand(
       child: Consumer<MusicService>(
         builder: (_, service, _) => Row(
@@ -244,7 +249,7 @@ class _CollapsedView extends StatelessWidget {
           children: [
             const SizedBox(width: 5),
             ValueListenableBuilder(
-              valueListenable: mainAppController.waveformsMusic,
+              valueListenable: musicService.waveformsMusic,
               builder: (_, waveformValue, _) {
                 return SizedBox(
                   width: 39,
@@ -252,7 +257,7 @@ class _CollapsedView extends StatelessWidget {
                   child: WaveformAnimated(
                     player: player,
                     waveformValue: waveformValue, 
-                    isPlaying: mainAppController.isPlayingMusic,
+                    isPlaying: musicService.isPlayingMusic,
                   ),
                 );
               },
