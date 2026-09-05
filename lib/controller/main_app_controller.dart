@@ -11,7 +11,6 @@ class MainAppController extends ChangeNotifier {
   bool hideApp = false;
   bool clickThrough = false;
   bool activatedHide = false;
-  bool activatedHoverHide = false;
   SizeWindowObject sizeWindow = SizeWindowObject();
   Timer? _hoverPollTimer;
   late StreamSubscription _sub;
@@ -87,7 +86,7 @@ class MainAppController extends ChangeNotifier {
     if (inside == _mouseInside) return;
 
     _mouseInside = inside;
-    if (!activatedHoverHide) {
+    if (!clickThrough) {
       _requestState(inside ? IslandState.expanded : IslandState.collapsed);
     } else{
       !_mouseInside ? hidenApp(hiden: true) : hidenApp(hiden: false);

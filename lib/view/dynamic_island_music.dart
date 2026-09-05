@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:flutter/material.dart';
@@ -318,7 +317,7 @@ class _WaveformAnimatedState extends State<WaveformAnimated> with SingleTickerPr
       if (!mounted) return;
 
       if (!widget.isPlaying.value) {
-        _visualPhase.value += 0.000001;
+        _visualPhase.value += 0.00001;
         return;
       }
       _visualPhase.value += (_targetPhase - _visualPhase.value) * 0.95;
@@ -381,8 +380,8 @@ class WaveformPainter extends CustomPainter {
   double _sample(List<int> samples, double index) {
     final int i0 = index.floor().clamp(0, samples.length - 1);
     final int i1 = (i0 + 1).clamp(0, samples.length - 1);
-    final double t = index - index.floor();
-    return samples[i0] * (1 - t) + samples[i1] * t;
+    final double t = index.floor() - index;
+    return (samples[i0] * (1 - t) + samples[i1] * t) / 255.0;
   }
 
   @override
@@ -404,7 +403,7 @@ class WaveformPainter extends CustomPainter {
     final paint = Paint()
       ..strokeWidth = barWidth
       ..strokeCap = StrokeCap.round
-      ..color = Colors.white;
+      ..color = const Color.fromARGB(255, 255, 255, 255);
 
 
     if (!isPlayng) {
@@ -412,8 +411,7 @@ class WaveformPainter extends CustomPainter {
         final double x = i * step + barWidth / 2;
 
         double currentHeight = previousHeights[i];
-        double next = _lerpEase(currentHeight, 0.0, 0.7);
-        currentHeight = _smoothDamp(currentHeight, next, 0.4);
+        currentHeight = _smoothDamp(currentHeight, 0.0, 0.6);
         previousHeights[i] = currentHeight;
 
         paint.color = color.withOpacity(0.6);
@@ -427,23 +425,20 @@ class WaveformPainter extends CustomPainter {
       return;
     }
 
-    final double offset = phase * samples.length;
+    final double offset = phase * samples.length + 0.000005;
+    final double stepSample = (samples.length / barCount);
 
     for (int i = 0; i < barCount; i++) {
       final double x = i * step + barWidth / 2;
-
-      final double stepSample = samples.length / barCount;
       final double sampleIndex = (offset + i * stepSample) % samples.length;
 
-      double normalized = (_sample(samples, sampleIndex) / 255.0).clamp(0.0, 1.0);
-      normalized = _easeOut(normalized);
+      double normalized = _sample(samples, sampleIndex).clamp(0.0, 1.0);
 
       final double maxBarHalf = size.height * 0.45;
       final double targetHeight = (normalized * maxBarHalf).clamp(0.0, maxBarHalf);
 
       double currentHeight = previousHeights[i];
-      double next = _lerpEase(currentHeight, targetHeight, 0.2);
-      currentHeight = _smoothDamp(currentHeight, next, 0.5);
+      currentHeight = _smoothDamp(currentHeight, targetHeight, 1.5);
       previousHeights[i] = currentHeight;
 
       canvas.drawLine(
@@ -462,14 +457,6 @@ class WaveformPainter extends CustomPainter {
     return target;
   }
 
-  double _easeOut(double t) {
-    return 1 - pow(1 - t, 4).toDouble();
-  }
-
-  double _lerpEase(double a, double b, double t) {
-    final easedT = _easeOut(t);
-    return a + (b - a) * easedT;
-  }
 
   @override
   bool shouldRepaint(covariant WaveformPainter old) => true;

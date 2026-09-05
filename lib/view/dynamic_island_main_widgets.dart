@@ -120,10 +120,10 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                                   duration: const Duration(milliseconds: 450),
                                   curve: Curves.easeOut,
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(
-                                      isExpanded ? 0.9 : 1,
+                                    color: Colors.white.withValues(
+                                      alpha: isExpanded ? 0.9 : 1,
                                     ),
-                                    fontSize: isExpanded ? isPlayingMusicValue ? 18 : 28 : 14,
+                                    fontSize: isExpanded ? isPlayingMusicValue ? 16 : 24 : 14,
                                     fontWeight: isExpanded
                                         ? FontWeight.w300
                                         : FontWeight.w400,

@@ -35,14 +35,13 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         modifiers: [HotKeyModifier.meta],
       ),
       keyDownHandler: (_) async {
+        _mainAppController.clickThrough = !_mainAppController.clickThrough;
+
         if (_mainAppController.isDynamicIsland) {
-          _mainAppController.activatedHoverHide = !_mainAppController.activatedHoverHide;
-          if (_mainAppController.activatedHoverHide) {
+          if (_mainAppController.clickThrough) {
             await _mainAppController.requestState(IslandState.collapsed);
           }
-          return;
         }
-        _mainAppController.clickThrough = !_mainAppController.clickThrough;
         await windowManager.setIgnoreMouseEvents(
           _mainAppController.clickThrough,
           forward: true,
