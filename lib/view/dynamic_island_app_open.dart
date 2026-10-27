@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:dynamic_lake_macos/service/app_service.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_app_open/service/icon_repository.dart';
+import 'package:dynamic_lake_macos/view/service/icon_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -69,15 +69,14 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
   Widget build(BuildContext context) {
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
-        final isExpanded = mainAppController.stateApp == IslandState.expanded;
         return AnimatedPadding(
-          padding: EdgeInsetsGeometry.only(bottom: isExpanded ? 0 : 10), 
+          padding: EdgeInsetsGeometry.only(bottom: mainAppController.isExpanded || !mainAppController.isDynamicIsland ? 0 : 10), 
           duration: Duration(milliseconds: 500),
           curve: Curves.decelerate,
           child: Stack(
             children: [
               AnimatedAlign(
-                alignment: isExpanded ? .center : .bottomCenter,
+                alignment: mainAppController.isExpanded || !mainAppController.isDynamicIsland ? .center : .bottomCenter,
                 duration: Duration(milliseconds: 500),
                 curve: Curves.decelerate,
                 child: Consumer<AppService>(
@@ -88,72 +87,79 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                          onPressed: _canGoLeft ? _moveLeft : () {},
-                          icon: Icon(
-                            Icons.arrow_back_ios,
-                            size: 16,
-                            color: _canGoLeft ? Colors.white : const Color.fromARGB(255, 47, 47, 47),
+                        Flexible(
+                          child: IconButton(
+                            onPressed: _canGoLeft ? _moveLeft : () {},
+                            icon: Icon(
+                              Icons.arrow_back_ios,
+                              size: 16,
+                              color: _canGoLeft ? Colors.white : const Color.fromARGB(255, 47, 47, 47),
+                            ),
                           ),
                         ),
-                                      
-                        AnimatedContainer(
-                          height: isExpanded ? _itemWidth + 50 : _itemWidth,
-                          width: 290,
-                          duration: const Duration(milliseconds: 500),
-                          curve: Curves.easeOut,
-                          child: ListView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              controller: _scrollController,
-                              scrollDirection: Axis.horizontal,
-                              itemCount: apps.length,
-                              itemBuilder: (context, index) {
-                                final appPath = apps[index];
-                                final appName = getAppName(appPath);
-                                return GestureDetector(
-                                  onTap: () => Process.run('open', [appPath]),
-                                  onSecondaryTap: () {
-                                    appServiceValue.removeApp(appPath);
-                                  },
-                                  child: AnimatedContainer(
-                                    height: _itemWidth,
-                                    width: _itemWidth,
-                                    margin: EdgeInsets.only(
-                                      right: index != apps.length - 1 ? _itemSpacing : 0,
-                                    ),
-                                    duration: const Duration(milliseconds: 200),
-                                    child: Column(
-                                      mainAxisAlignment: .center,
-                                      children: [
-                                        _AppIcon(appPath: appPath),
-                                        Flexible(
-                                          child: AnimatedOpacity(
-                                            duration: Duration(milliseconds: 150),
-                                            curve: Curves.easeIn,
-                                            opacity: isExpanded ? 1 : 0,
-                                            child: Text(
-                                              textAlign: TextAlign.center,
-                                              appName,
-                                              maxLines: 2,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(color: Colors.white, fontSize: 8),
+
+                        Flexible(
+                          flex: 7,
+                          child: AnimatedContainer(
+                            height: mainAppController.isExpanded ? _itemWidth + 50 : _itemWidth,
+                            width: 290,
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOut,
+                            child: ListView.builder(
+                                physics: const NeverScrollableScrollPhysics(),
+                                controller: _scrollController,
+                                scrollDirection: Axis.horizontal,
+                                itemCount: mainAppController.animatedChangeDynamicIsland ? 0 : apps.length,
+                                itemBuilder: (context, index) {
+                                  final appPath = apps[index];
+                                  final appName = getAppName(appPath);
+                                  return GestureDetector(
+                                    onTap: () => Process.run('open', [appPath]),
+                                    onSecondaryTap: () {
+                                      appServiceValue.removeApp(appPath);
+                                    },
+                                    child: AnimatedContainer(
+                                      height: _itemWidth,
+                                      width: _itemWidth,
+                                      margin: EdgeInsets.only(
+                                        right: index != apps.length - 1 ? _itemSpacing : 0,
+                                      ),
+                                      duration: const Duration(milliseconds: 200),
+                                      child: Column(
+                                        mainAxisAlignment: .center,
+                                        children: [
+                                          _AppIcon(appPath: appPath),
+                                          Flexible(
+                                            child: AnimatedOpacity(
+                                              duration: Duration(milliseconds: 150),
+                                              curve: Curves.easeIn,
+                                              opacity: mainAppController.isExpanded ? 1 : 0,
+                                              child: Text(
+                                                textAlign: TextAlign.center,
+                                                appName,
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(color: Colors.white, fontSize: 8),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                );
-                              },
-                            )
-                          ),
+                                  );
+                                },
+                              )
+                            ),
+                        ),
                           
-                          IconButton(
-                            onPressed: _canGoRight ? _moveRight : () {},
-                            icon: Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
-                              color: _canGoRight ? Colors.white : const Color.fromARGB(255, 47, 47, 47),
+                          Flexible(
+                            child: IconButton(
+                              onPressed: _canGoRight ? _moveRight : () {},
+                              icon: Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: _canGoRight ? Colors.white : const Color.fromARGB(255, 47, 47, 47),
+                              ),
                             ),
                           ),
                         ],
@@ -164,15 +170,15 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
               AnimatedPadding(
                 duration: Duration(milliseconds: 700),
                 curve: Curves.decelerate,
-                padding: EdgeInsetsGeometry.only(top: isExpanded ? 120 : 70) ,
+                padding: EdgeInsetsGeometry.only(top: mainAppController.isExpanded ? 120 : 70) ,
                 child: AnimatedAlign(
-                  alignment: isExpanded ? .center : .bottomCenter,
+                  alignment: mainAppController.isExpanded ? .center : .bottomCenter,
                   duration: Duration(milliseconds: 700),
                   curve: Curves.decelerate,
                   child: AnimatedOpacity(
                     duration: Duration(milliseconds: 150),
                     curve: Curves.easeIn,
-                    opacity: isExpanded ? 1 : 0,
+                    opacity: mainAppController.isExpanded ? 1 : 0,
                     child: TextButton(
                       onPressed: () {}, 
                       child: Text(

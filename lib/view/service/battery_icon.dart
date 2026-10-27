@@ -1,92 +1,9 @@
 import 'dart:async';
+
 import 'package:battery_plus/battery_plus.dart';
+import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
-
-class DynamicIslandBattery extends StatefulWidget {
-  const DynamicIslandBattery({
-    super.key,
-  });
-
-  @override
-  State<DynamicIslandBattery> createState() => _DynamicIslandBatteryState();
-}
-
-class _DynamicIslandBatteryState extends State<DynamicIslandBattery> {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.expand(
-      child: Consumer<MainAppController>(
-        builder: (_, mainAppController, _) => _batteryMovement(mainAppController)
-      ),
-    );
-  }
-
-  Widget _batteryMovement(MainAppController mainAppController) {
-    return ValueListenableBuilder<int>(
-      valueListenable: mainAppController.batteryLevel,
-      builder: (_, level, _) {
-        final isExpanded = mainAppController.stateApp == IslandState.expanded;
-        return SizedBox(
-          height: isExpanded ? 80 : 20,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              AnimatedPadding(
-                duration: Duration(milliseconds: isExpanded ? 400 : 200),
-                curve: isExpanded ? Curves.decelerate : Curves.easeIn,
-                padding: EdgeInsets.only(
-                  right: mainAppController.isDynamicIsland ? isExpanded ? 0.0 : 33.0 : isExpanded ? 0 : 25,
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeInOut,
-                  alignment: mainAppController.isDynamicIsland ? isExpanded ? Alignment.center : Alignment.centerRight : Alignment.center,
-                  child: BatteryIcon(
-                    height: isExpanded ? 33 : 14.4,
-                    width: isExpanded ? 76 : 26,
-                    border: isExpanded ? 7 : 3,
-                    level: level,
-                    mainAppController: mainAppController,
-                  ),
-                ),
-              ),
-
-              AnimatedPadding(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.decelerate,
-                padding: EdgeInsets.only(
-                  bottom: mainAppController.isDynamicIsland ? isExpanded ? 33.0 : 0.0 : 0.0,
-                  left: mainAppController.isDynamicIsland ? isExpanded ? 0 : 40 : isExpanded ? 0 : 45,
-                  top: mainAppController.isDynamicIsland ? isExpanded ? 8 : 0 : isExpanded ? 75 : 0
-                ),
-                child: AnimatedAlign(
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.decelerate,
-                  alignment: mainAppController.isDynamicIsland ? isExpanded
-                      ? Alignment.bottomCenter
-                      : Alignment.centerRight : Alignment.center,
-                  child: AnimatedDefaultTextStyle(
-                    duration: const Duration(milliseconds: 500),
-                    curve: Curves.easeInOutCubic,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: isExpanded ? 18 : 12,
-                      height: 1,
-                    ),
-                    child: Text('$level%'),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
 
 class BatteryIcon extends StatefulWidget {
   final int level;

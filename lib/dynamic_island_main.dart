@@ -6,7 +6,7 @@ import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/app_service.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_app_open/dynamic_island_app_open.dart';
+import 'package:dynamic_lake_macos/view/dynamic_island_app_open.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_drop_file.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_main_widgets.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_music.dart';
@@ -89,10 +89,10 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
             );
           });
           await notchChannel.invokeMethod('moveToNotch', {
-            'width': sizeWindowObjects[pageIndex.value].collapsedSize.width,
-            'height': sizeWindowObjects[pageIndex.value].collapsedSize.height,
-            'height_dynamic_island': sizeWindowObjects[pageIndex.value].collapsedSizeBaseDynamicIsland.height,
-            'width_dynamic_island': sizeWindowObjects[pageIndex.value].collapsedSizeBaseDynamicIsland.width,
+            'width': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize.width,
+            'height': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize.height,
+            'height_dynamic_island': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSizeBaseDynamicIsland.height,
+            'width_dynamic_island': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSizeBaseDynamicIsland.width,
           });
           _mainAppController.animatedChangeDynamicIsland = false;
         } catch (e) {
@@ -104,7 +104,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
 
   Future<void> initWindowSize() async {
     await windowManager.waitUntilReadyToShow(WindowOptions(
-      size: sizeWindowObjects[pageIndex.value].collapsedSize,
+      size: sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize,
       center: true,
     ), () {});
   }
@@ -118,49 +118,40 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   }
 
   final ValueNotifier<bool> _dragging = ValueNotifier(false);
-  List<Widget> pageDynamicIsland = [
-    DynamicIslandMainWidgets(),
-    // DynamicIslandTime(),
-    // DynamicIslandBattery(),
-    // DynamicIslandTimer(),
-    DynamicIslandMusic(),
-    DynamicIslandAppOpen(),
-  ];
+  Map<StateScreen, Widget> pageDynamicIsland = {
+    StateScreen.main: DynamicIslandMainWidgets(),
+    StateScreen.music: DynamicIslandMusic(),
+    StateScreen.app: DynamicIslandAppOpen(),
 
-  List<SizeWindowObject> sizeWindowObjects = [
-    SizeWindowObject(
-      collapsedSize: Size(260, 50),
+    StateScreen.mainMusic: DynamicIslandMainWidgets(),
+  };
+
+  Map<StateScreen, SizeWindowObject> sizeWindowObjects = {
+    StateScreen.main: SizeWindowObject(
+      collapsedSize: Size(260, 80),
       collapsedSizeBaseDynamicIsland: Size(420, 75)
     ),
-    // SizeWindowObject(
-    //   collapsedSize: Size(260, 50),
-    //   collapsedSizeBaseDynamicIsland: Size(420, 75)
-    // ),
-    // SizeWindowObject(
-    //   expandedSize: Size(200, 140),
-    //   expandedSizeBaseDynamicIsland: Size(420, 160)
-    // ),
-    // SizeWindowObject(
-    //   expandedSize: Size(200, 140),
-    //   // expandedSizeBaseDynamicIsland: Size(280, 130)
-    //   expandedSizeBaseDynamicIsland: Size(420, 190)
-    // ),
-    SizeWindowObject(
+    StateScreen.music: SizeWindowObject(
       collapsedSizeBaseDynamicIsland: Size(420, 48),
       expandedSize: Size(360, 290),
       expandedSizeBaseDynamicIsland: Size(420, 270),
     ),
-    SizeWindowObject(
+    StateScreen.app: SizeWindowObject(
       collapsedSize: Size(420, 95),
       expandedSize: Size(420, 170),
       collapsedSizeBaseDynamicIsland: Size(420, 95),
       expandedSizeBaseDynamicIsland: Size(420, 170),
-    )
-  ];
+    ),
+    StateScreen.mainMusic: SizeWindowObject(
+      collapsedSize: Size(400, 80),
+      expandedSize: Size(400, 170),
+      collapsedSizeBaseDynamicIsland: Size(420, 75),
+    ),
+  };
 
   @override
   Widget build(BuildContext context) {
-    _mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
+    _mainAppController.sizeWindow = sizeWindowObjects[_mainAppController.stateScreen];
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return DropTarget(
@@ -183,7 +174,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
             _dragging.value = true;
           },
           onDragExited: (detail) {
-            mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
+            mainAppController.sizeWindow = sizeWindowObjects[mainAppController.stateScreen];
             mainAppController.stateApp = IslandState.collapsed;
             mainAppController.resizeWindow(mainAppController.isDynamicIsland ? mainAppController.sizeWindow.collapsedSizeBaseDynamicIsland : mainAppController.sizeWindow.collapsedSize);
             _dragging.value = false;
@@ -198,21 +189,23 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
                   mainAppController.isDynamicIsland || 
                   mainAppController.isAnimating || 
                   mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
-                  onTap: () {
-                    if (mainAppController.animatedChangeDynamicIsland) return;
-                    if (!mainAppController.isDynamicIsland) {
-                      if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
-                      try {
-                        mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
-                      } catch (_) {}
-                    } else {
-                      pageIndex.value == pageDynamicIsland.length - 1 ? pageIndex.value = 0 :pageIndex.value++;
-                      mainAppController.sizeWindow = sizeWindowObjects[pageIndex.value];
-                      mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland);
-                    }
-                  },
-                  child: buildScaffoldMain(pageDynamicIsland[pageIndexValue])
-                ) : buildScaffoldMain(DynamicIslandDropFile())
+                onTap: () {
+                  if (mainAppController.animatedChangeDynamicIsland) return;
+                  if (!mainAppController.isDynamicIsland) {
+                    if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
+                    try {
+                      mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
+                    } catch (_) {}
+                  } else {
+                    pageIndex.value == pageDynamicIsland.length - 1 ? pageIndex.value = 0 :pageIndex.value++;
+                    mainAppController.stateScreen = pageDynamicIsland.keys.elementAt(pageIndex.value);
+                    print(mainAppController.stateScreen);
+                    mainAppController.sizeWindow = sizeWindowObjects[mainAppController.stateScreen];
+                    mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland);
+                  }
+                },
+                child: buildScaffoldMain(pageDynamicIsland.values.elementAt(pageIndexValue))) 
+                : buildScaffoldMain(DynamicIslandDropFile())
               );
             }
           )

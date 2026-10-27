@@ -1,17 +1,19 @@
 import 'dart:async';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
+import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 
 enum IslandState { collapsed, expanded }
 
+enum StateScreen { main, mainMusic, music, app}
+
 class MainAppController extends ChangeNotifier {
   bool hideApp = false;
   bool clickThrough = false;
   bool activatedHide = false;
-  SizeWindowObject sizeWindow = SizeWindowObject();
   Timer? _hoverPollTimer;
   late StreamSubscription _sub;
   late Battery battery;
@@ -24,8 +26,25 @@ class MainAppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  StateScreen _stateScreen = StateScreen.main;
+  StateScreen get stateScreen => _stateScreen;
+  set stateScreen(StateScreen ss) {
+    if (ss == StateScreen.main && MusicService().isPlayingMusic.value) {
+      _stateScreen = StateScreen.mainMusic;
+      return;
+    }
+    _stateScreen = ss;
+  }
+
+  SizeWindowObject _sizeWindow = SizeWindowObject();
+  SizeWindowObject get sizeWindow => _sizeWindow;
+  set sizeWindow(SizeWindowObject? swo) {
+    _sizeWindow = swo ?? SizeWindowObject();
+  }
+
   IslandState _stateApp = IslandState.collapsed;
   IslandState get stateApp => _stateApp;
+  bool get isExpanded =>  _stateApp == IslandState.expanded;
   set stateApp(IslandState newState) {
     _stateApp = newState;
     notifyListeners();
@@ -72,6 +91,7 @@ class MainAppController extends ChangeNotifier {
     _isAnimating = v;
     notifyListeners();
   }
+
   bool _mouseInside = false;
   static const _channel = MethodChannel('window/animation');
 
@@ -104,8 +124,8 @@ class MainAppController extends ChangeNotifier {
     stateApp = animatingTo;
 
     final size = animatingTo == IslandState.expanded
-        ? isDynamicIsland ? sizeWindow.expandedSizeBaseDynamicIsland : sizeWindow.expandedSize
-        : isDynamicIsland ? sizeWindow.collapsedSizeBaseDynamicIsland : sizeWindow.collapsedSize;
+        ? isDynamicIsland ? _sizeWindow.expandedSizeBaseDynamicIsland : _sizeWindow.expandedSize
+        : isDynamicIsland ? _sizeWindow.collapsedSizeBaseDynamicIsland : _sizeWindow.collapsedSize;
 
     try {
       resizeWindow(size);
@@ -131,8 +151,8 @@ class MainAppController extends ChangeNotifier {
     stateApp = animatingTo;
 
     final size = animatingTo == IslandState.expanded
-        ? isDynamicIsland ? sizeWindow.expandedSizeBaseDynamicIsland : sizeWindow.expandedSize
-        : isDynamicIsland ? sizeWindow.collapsedSizeBaseDynamicIsland : sizeWindow.collapsedSize;
+        ? isDynamicIsland ? _sizeWindow.expandedSizeBaseDynamicIsland : _sizeWindow.expandedSize
+        : isDynamicIsland ? _sizeWindow.collapsedSizeBaseDynamicIsland : _sizeWindow.collapsedSize;
 
     try {
       await resizeWindow(size);

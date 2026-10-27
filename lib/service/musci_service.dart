@@ -13,7 +13,9 @@ class MusicService extends ChangeNotifier {
 
   List<String> get music => _musicPaths;
 
-  MusicService() {
+  static final MusicService _instance = MusicService._internal();
+  factory MusicService() => _instance;
+  MusicService._internal(){
     loadMusic();
 
     stateSubscription = playerMusic.playerStateStream.listen((state) async {

@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_battery.dart';
 import 'package:dynamic_lake_macos/view/dynamic_island_music.dart';
+import 'package:dynamic_lake_macos/view/service/battery_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -53,44 +53,48 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
   Widget build(BuildContext context) {
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
-        final isExpanded = mainAppController.stateApp == IslandState.expanded;
         return Stack(
           fit: StackFit.expand,
           children: [
-            ValueListenableBuilder<int>(
-              valueListenable: mainAppController.batteryLevel,
-              builder: (_, level, _) {
-                return Row(
-                  mainAxisSize: .min,
-                  crossAxisAlignment: .start,
-                  mainAxisAlignment: .end,
-                  spacing: 5,
-                  children: [
-                    Flexible(
-                      child: BatteryIcon(
-                        height: 14.4,
-                        width: 26,
-                        border: 3,
-                        level: level,
-                        mainAppController: null,
-                      ),
-                    ),
-                
-                    Flexible(
-                      child: Text(
-                        '$level%',
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          height: 1,
-                          overflow: TextOverflow.ellipsis
+            AnimatedPadding(
+              duration: const Duration(milliseconds: 450),
+              curve: Curves.easeOut,
+              padding: EdgeInsets.only(top: mainAppController.isDynamicIsland ? 0 : 8.0),
+              child: ValueListenableBuilder<int>(
+                valueListenable: mainAppController.batteryLevel,
+                builder: (_, level, _) {
+                  return Row(
+                    mainAxisSize: .min,
+                    crossAxisAlignment: .start,
+                    mainAxisAlignment: .end,
+                    spacing: 5,
+                    children: [
+                      Flexible(
+                        child: BatteryIcon(
+                          height: 14.4,
+                          width: 26,
+                          border: 3,
+                          level: level,
+                          mainAppController: null,
                         ),
                       ),
-                    ),
-                  ],
-                );
-              }
+                  
+                      Flexible(
+                        child: Text(
+                          '$level%',
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            height: 1,
+                            overflow: TextOverflow.ellipsis
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+              ),
             ),
             Consumer<MusicService>(
               builder: (_, musicService, _) => ValueListenableBuilder(
@@ -100,14 +104,14 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                     mainAxisAlignment: isPlayingMusicValue ? .spaceBetween : .center,
                     children: [
                       if (isPlayingMusicValue)
-                      _buildMusicWidget(isExpanded, musicService),
+                      _buildMusicWidget(mainAppController.isExpanded, musicService),
                       Flexible(
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 450),
                           curve: Curves.easeOut,
                           padding: EdgeInsets.only(
-                            top: isPlayingMusicValue && isExpanded ? 25 : 0,
-                            bottom: isExpanded ? 0 : isPlayingMusicValue ? 5.3 : 18,
+                            top: isPlayingMusicValue && mainAppController.isExpanded ? 25 : 0,
+                            bottom: mainAppController.isExpanded ? 0 : isPlayingMusicValue ? 5.3 : mainAppController.isDynamicIsland ? 18 : 0,
                           ),
                           child: ValueListenableBuilder<String>(
                             valueListenable: _time,
@@ -115,16 +119,17 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                               return AnimatedAlign(
                                 duration: const Duration(milliseconds: 450),
                                 curve: Curves.easeOut,
-                                alignment: isExpanded && !isPlayingMusicValue ? Alignment.center : isPlayingMusicValue && isExpanded ? Alignment.topCenter : Alignment.bottomCenter,
+                                alignment: mainAppController.isExpanded && !isPlayingMusicValue ? Alignment.center : isPlayingMusicValue 
+                                  && mainAppController.isExpanded ? Alignment.topCenter : mainAppController.isDynamicIsland || isPlayingMusicValue ? Alignment.bottomCenter : Alignment.center,
                                 child: AnimatedDefaultTextStyle(
                                   duration: const Duration(milliseconds: 450),
                                   curve: Curves.easeOut,
                                   style: TextStyle(
                                     color: Colors.white.withValues(
-                                      alpha: isExpanded ? 0.9 : 1,
+                                      alpha: mainAppController.isExpanded ? 0.9 : 1,
                                     ),
-                                    fontSize: isExpanded ? isPlayingMusicValue ? 16 : 24 : 14,
-                                    fontWeight: isExpanded
+                                    fontSize: mainAppController.isExpanded ? isPlayingMusicValue ? 16 : 24 : 14,
+                                    fontWeight: mainAppController.isExpanded
                                         ? FontWeight.w300
                                         : FontWeight.w400,
                                   ),
