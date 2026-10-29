@@ -56,15 +56,7 @@ class MainFlutterWindow: NSWindow {
             switch call.method {
 
             case "isMouseInsideWindow":
-                let mouseLocation = NSEvent.mouseLocation
-                let windowFrame = self.frame
-
-                let inside =
-                    mouseLocation.x >= windowFrame.minX &&
-                    mouseLocation.x <= windowFrame.maxX &&
-                    mouseLocation.y >= windowFrame.minY &&
-                    mouseLocation.y <= windowFrame.maxY
-
+                let inside = self.frame.contains(NSEvent.mouseLocation)
                 result(inside)
             case "resize":
                 guard

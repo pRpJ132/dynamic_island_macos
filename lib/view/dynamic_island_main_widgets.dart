@@ -60,10 +60,10 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
               duration: const Duration(milliseconds: 450),
               curve: Curves.easeOut,
               padding: EdgeInsets.only(top: mainAppController.isDynamicIsland ? 0 : 8.0),
-              child: ValueListenableBuilder<int>(
+              child: ValueListenableBuilder<int?>(
                 valueListenable: mainAppController.batteryLevel,
                 builder: (_, level, _) {
-                  return Row(
+                  return level != null ? Row(
                     mainAxisSize: .min,
                     crossAxisAlignment: .start,
                     mainAxisAlignment: .end,
@@ -92,7 +92,7 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                         ),
                       ),
                     ],
-                  );
+                  ) : SizedBox.expand();
                 }
               ),
             ),

@@ -1,5 +1,6 @@
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/dynamic_island_main.dart';
+import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/app_service.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,11 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await windowManager.ensureInitialized();
   await hotKeyManager.unregisterAll();
+
+  await windowManager.waitUntilReadyToShow(WindowOptions(
+    size: SizeWindowObject().collapsedSize,
+    center: true,
+  ), () {});
 
   runApp(
     MultiProvider(
@@ -29,8 +35,8 @@ class DynamicIslandApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.read<MusicService>();
-    context.read<AppService>();
+    // context.read<MusicService>();
+    // context.read<AppService>();
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: DynamicIslandMain(),

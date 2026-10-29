@@ -17,7 +17,7 @@ class MainAppController extends ChangeNotifier {
   Timer? _hoverPollTimer;
   late StreamSubscription _sub;
   late Battery battery;
-  ValueNotifier<int> batteryLevel = ValueNotifier(100);
+  ValueNotifier<int?> batteryLevel = ValueNotifier(null);
 
   bool _animatedChangeDynamicIsland = false;
   bool get animatedChangeDynamicIsland => _animatedChangeDynamicIsland;

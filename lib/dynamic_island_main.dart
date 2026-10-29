@@ -27,6 +27,36 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   static const notchChannel = MethodChannel('window/notch');
   late MainAppController _mainAppController;
   static ValueNotifier<int> pageIndex = ValueNotifier(0);
+  final pageDynamicIslandMax = 3;
+  bool nextPageAnimated = false;
+
+  void nextPage(MainAppController mainAppController, {int? page}) {
+    if (nextPageAnimated == true) return;
+    nextPageAnimated = true;
+    int newPage = pageIndex.value;
+    if (page == null) {
+      pageIndex.value == pageDynamicIsland.length - 1 ? newPage = 0 : newPage++;
+    } else {
+      newPage = page;
+    }
+    Future.delayed(const Duration(milliseconds: 150), () {
+      pageIndex.value = newPage;
+    });
+    Future.delayed(const Duration(milliseconds: 550), () {
+      nextPageAnimated = false;
+    });
+    mainAppController.stateScreen = pageDynamicIsland.keys.elementAt(newPage);
+    mainAppController.sizeWindow = sizeWindowObjects[mainAppController.stateScreen];
+    if (mainAppController.isDynamicIsland) {
+      mainAppController.isExpanded
+      ? mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland)
+      : mainAppController.resizeWindow(mainAppController.sizeWindow.collapsedSizeBaseDynamicIsland);
+    } else {
+      mainAppController.isExpanded
+      ? mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSize)
+      : mainAppController.resizeWindow(mainAppController.sizeWindow.collapsedSize);
+    }
+  }
 
   void initKeyBind() async {
     await hotKeyManager.register(
@@ -100,6 +130,35 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         }
       },
     );
+
+    final List<PhysicalKeyboardKey> digitalKeys = [
+      PhysicalKeyboardKey.digit1,
+      PhysicalKeyboardKey.digit2,
+      PhysicalKeyboardKey.digit3,
+      PhysicalKeyboardKey.digit4,
+      PhysicalKeyboardKey.digit5,
+      PhysicalKeyboardKey.digit6,
+      PhysicalKeyboardKey.digit7,
+      PhysicalKeyboardKey.digit8,
+      PhysicalKeyboardKey.digit9,
+    ];
+
+    for (int i = 0; i < digitalKeys.length; i++) {
+      final int pressedNumber = i + 1;
+
+      HotKey hotKey = HotKey(
+        key: digitalKeys[i],
+        modifiers: [HotKeyModifier.meta], 
+      );
+
+      await hotKeyManager.register(
+        hotKey,
+        keyDownHandler: (hotKey) {
+          if (pageDynamicIslandMax < pressedNumber || _mainAppController.animatedChangeDynamicIsland || _mainAppController.isAnimating) return;
+          nextPage(_mainAppController, page: pressedNumber-1);
+        },
+      );
+    }
   }
 
   Future<void> initWindowSize() async {
@@ -113,8 +172,8 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   void initState() {
     super.initState();
     _mainAppController = context.read<MainAppController>();
-    initKeyBind();
     initWindowSize();
+    initKeyBind();
   }
 
   final ValueNotifier<bool> _dragging = ValueNotifier(false);
@@ -142,6 +201,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       collapsedSizeBaseDynamicIsland: Size(420, 95),
       expandedSizeBaseDynamicIsland: Size(420, 170),
     ),
+
     StateScreen.mainMusic: SizeWindowObject(
       collapsedSize: Size(400, 80),
       expandedSize: Size(400, 170),
@@ -165,47 +225,49 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
             }
           },
           onDragEntered: (detail) async {
+            _dragging.value = true;
             mainAppController.sizeWindow = SizeWindowObject(
               expandedSizeBaseDynamicIsland: Size(420, 160)
             );
             if (!mainAppController.isDynamicIsland) {
               mainAppController.resizeWindow(Size(140, 140));
             }
-            _dragging.value = true;
           },
           onDragExited: (detail) {
+            _dragging.value = false;
             mainAppController.sizeWindow = sizeWindowObjects[mainAppController.stateScreen];
             mainAppController.stateApp = IslandState.collapsed;
             mainAppController.resizeWindow(mainAppController.isDynamicIsland ? mainAppController.sizeWindow.collapsedSizeBaseDynamicIsland : mainAppController.sizeWindow.collapsedSize);
-            _dragging.value = false;
           },
           child: ValueListenableBuilder(
             valueListenable: pageIndex,
             builder: (_, pageIndexValue, _) {
               return ValueListenableBuilder(
                 valueListenable: _dragging, 
-                builder: (_, draggingValue, _) => !draggingValue ? GestureDetector(
-                onPanStart: (_) async => (
-                  mainAppController.isDynamicIsland || 
-                  mainAppController.isAnimating || 
-                  mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
-                onTap: () {
-                  if (mainAppController.animatedChangeDynamicIsland) return;
-                  if (!mainAppController.isDynamicIsland) {
-                    if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
-                    try {
-                      mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
-                    } catch (_) {}
-                  } else {
-                    pageIndex.value == pageDynamicIsland.length - 1 ? pageIndex.value = 0 :pageIndex.value++;
-                    mainAppController.stateScreen = pageDynamicIsland.keys.elementAt(pageIndex.value);
-                    print(mainAppController.stateScreen);
-                    mainAppController.sizeWindow = sizeWindowObjects[mainAppController.stateScreen];
-                    mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland);
-                  }
-                },
-                child: buildScaffoldMain(pageDynamicIsland.values.elementAt(pageIndexValue))) 
-                : buildScaffoldMain(DynamicIslandDropFile())
+                builder: (_, draggingValue, _) => !draggingValue ? AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 70),
+                  switchInCurve: Curves.easeIn,
+                  switchOutCurve: Curves.easeOut,
+                  child: GestureDetector(
+                  key: ValueKey('page_$pageIndexValue'),
+                  onPanStart: (_) async => (
+                    mainAppController.isDynamicIsland || 
+                    mainAppController.isAnimating || 
+                    mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
+                  onTap: () {
+                    if (mainAppController.animatedChangeDynamicIsland) return;
+                    if (!mainAppController.isDynamicIsland) {
+                      if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
+                      try { 
+                        mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
+                      } catch (_) {}
+                    } else {
+                      nextPage(mainAppController);
+                    }
+                  },
+                  child: buildScaffoldMain(pageDynamicIsland.values.elementAt(pageIndexValue))),
+                ) 
+                : buildScaffoldMain(DynamicIslandDropFile(), key: ValueKey('page_$pageIndexValue'))
               );
             }
           )
@@ -215,9 +277,11 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   }
 
   Widget buildScaffoldMain(
-    Widget child
+    Widget child,
+    {Key? key}
   ) {
     return Scaffold(
+      key: key,
       backgroundColor: Colors.transparent,
       body: SizedBox.expand(
         child: Consumer<MainAppController>(
