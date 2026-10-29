@@ -6,10 +6,11 @@ import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/app_service.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_app_open.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_drop_file.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_main_widgets.dart';
-import 'package:dynamic_lake_macos/view/dynamic_island_music.dart';
+import 'package:dynamic_lake_macos/view/app_open.dart';
+import 'package:dynamic_lake_macos/view/drop_file.dart';
+import 'package:dynamic_lake_macos/view/main_widgets.dart';
+import 'package:dynamic_lake_macos/view/music.dart';
+import 'package:dynamic_lake_macos/view/search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -27,7 +28,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   static const notchChannel = MethodChannel('window/notch');
   late MainAppController _mainAppController;
   static ValueNotifier<int> pageIndex = ValueNotifier(0);
-  final pageDynamicIslandMax = 3;
+  final pageDynamicIslandMax = 4;
   bool nextPageAnimated = false;
 
   void nextPage(MainAppController mainAppController, {int? page}) {
@@ -59,11 +60,29 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   }
 
   void initKeyBind() async {
+    final throughHotKey = HotKey(
+      key: PhysicalKeyboardKey.keyT,
+      modifiers: [HotKeyModifier.meta],
+    );
+
+    final hideHotKey = HotKey(
+      key: PhysicalKeyboardKey.keyH,
+      modifiers: [HotKeyModifier.meta],
+    );
+
+    final quitHotKey = HotKey(
+      key: PhysicalKeyboardKey.keyQ,
+      modifiers: [HotKeyModifier.meta],
+    );
+
+    final dynamicIslandHotKey = HotKey(
+      key: PhysicalKeyboardKey.keyD,
+      modifiers: [HotKeyModifier.meta],
+    );
+
+
     await hotKeyManager.register(
-      HotKey(
-        key: PhysicalKeyboardKey.keyJ,
-        modifiers: [HotKeyModifier.meta],
-      ),
+      throughHotKey,
       keyDownHandler: (_) async {
         _mainAppController.clickThrough = !_mainAppController.clickThrough;
 
@@ -80,10 +99,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     );
 
     await hotKeyManager.register(
-      HotKey(
-        key: PhysicalKeyboardKey.keyH,
-        modifiers: [HotKeyModifier.meta],
-      ),
+      hideHotKey,
       keyDownHandler: (_) async {
         _mainAppController.activatedHide = !_mainAppController.activatedHide;
         await _mainAppController.hidenApp();
@@ -91,21 +107,14 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     );
 
     await hotKeyManager.register(
-      HotKey(
-        key: PhysicalKeyboardKey.keyQ,
-        modifiers: [HotKeyModifier.meta],
-      ),
-
+      quitHotKey,
       keyDownHandler: (_) async {
         exit(0);
       },
     );
 
     await hotKeyManager.register(
-      HotKey(
-        key: PhysicalKeyboardKey.keyG,
-        modifiers: [HotKeyModifier.meta],
-      ),
+      dynamicIslandHotKey,
       keyDownHandler: (_) async {
         try {
           if (_mainAppController.isAnimating || _mainAppController.animatedChangeDynamicIsland) return;
@@ -177,10 +186,11 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   }
 
   final ValueNotifier<bool> _dragging = ValueNotifier(false);
-  Map<StateScreen, Widget> pageDynamicIsland = {
+  late Map<StateScreen, Widget> pageDynamicIsland = {
     StateScreen.main: DynamicIslandMainWidgets(),
     StateScreen.music: DynamicIslandMusic(),
     StateScreen.app: DynamicIslandAppOpen(),
+    StateScreen.search: DynamicIslandSearch(),
 
     StateScreen.mainMusic: DynamicIslandMainWidgets(),
   };
@@ -200,6 +210,12 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       expandedSize: Size(420, 170),
       collapsedSizeBaseDynamicIsland: Size(420, 95),
       expandedSizeBaseDynamicIsland: Size(420, 170),
+    ),
+    StateScreen.search: SizeWindowObject(
+      collapsedSize: Size(320, 50),
+      expandedSize: Size(420, 310),
+      collapsedSizeBaseDynamicIsland: Size(420, 75),
+      expandedSizeBaseDynamicIsland: Size(420, 310),
     ),
 
     StateScreen.mainMusic: SizeWindowObject(
@@ -293,7 +309,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
               decoration: BoxDecoration(
                 color: mainAppController.isDynamicIsland ? Colors.black : Colors.transparent,
               ),
-              padding: EdgeInsets.symmetric(horizontal: (mainAppController.isDynamicIsland && mainAppController.stateApp != IslandState.expanded) ? 24 : 20),
+              padding: EdgeInsets.symmetric(horizontal: 20),
               child: Stack(
                 children: [
                   child

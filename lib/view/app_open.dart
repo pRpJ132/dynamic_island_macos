@@ -70,7 +70,7 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return AnimatedPadding(
-          padding: EdgeInsetsGeometry.only(bottom: mainAppController.isExpanded || !mainAppController.isDynamicIsland ? 0 : 10), 
+          padding: EdgeInsetsGeometry.only(bottom: mainAppController.isExpanded || !mainAppController.isDynamicIsland ? mainAppController.isExpanded ? 15 : 0 : 10), 
           duration: Duration(milliseconds: 500),
           curve: Curves.decelerate,
           child: Stack(

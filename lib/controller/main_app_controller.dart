@@ -8,7 +8,13 @@ import 'package:window_manager/window_manager.dart';
 
 enum IslandState { collapsed, expanded }
 
-enum StateScreen { main, mainMusic, music, app}
+enum StateScreen {
+  main,
+  mainMusic,
+  music,
+  app,
+  search,
+}
 
 class MainAppController extends ChangeNotifier {
   bool hideApp = false;

@@ -36,7 +36,7 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.6.0
   window_manager: ^0.5.1
-  intl: ^0.20.2
+  intl: ^0.20.3
   hotkey_manager: ^0.2.3
   flutter_acrylic: ^1.1.4
   provider: ^6.1.5+1
