@@ -71,7 +71,7 @@ class MainAppController extends ChangeNotifier {
   StateScreen _stateScreen = StateScreen.main;
   StateScreen get stateScreen => _stateScreen;
   set stateScreen(StateScreen ss) {
-    if (ss == StateScreen.main && MusicService().isPlayingMusic.value) {
+    if (ss == StateScreen.main && MusicService().isPlayingMusic) {
       _stateScreen = StateScreen.mainMusic;
       return;
     }

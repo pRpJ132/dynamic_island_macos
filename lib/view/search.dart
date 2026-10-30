@@ -54,12 +54,6 @@ class _DynamicIslandSearchState extends State<DynamicIslandSearch>
     _textController.addListener(_onTextChanged);
 
     _loadInitialData();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _focusNode.requestFocus();
-      }
-    });
   }
 
   Future<void> _loadInitialData() async {

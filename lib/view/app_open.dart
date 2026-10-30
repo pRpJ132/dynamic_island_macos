@@ -139,7 +139,7 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
                                       child: Column(
                                         mainAxisAlignment: .center,
                                         children: [
-                                          _AppIcon(appPath: appPath),
+                                          Flexible(flex: 7, child: _AppIcon(appPath: appPath)),
                                           Flexible(
                                             child: AnimatedOpacity(
                                               duration: Duration(milliseconds: 150),

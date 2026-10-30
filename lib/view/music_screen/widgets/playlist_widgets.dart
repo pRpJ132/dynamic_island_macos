@@ -1,6 +1,8 @@
+import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:flutter/material.dart' hide RepeatMode;
 import 'package:marquee/marquee.dart';
+import 'package:provider/provider.dart';
 import 'package:ultimate_flutter_icons/flutter_icons.dart';
 
 String fileNameOf(String path) => path.split(RegExp(r'[\\/]')).last;
@@ -88,18 +90,15 @@ class PlaylistBar extends StatelessWidget {
               onPressed: service.cycleRepeat,
             ),
           ),
-          ValueListenableBuilder<bool>(
-            valueListenable: service.isPlayingMusic,
-            builder: (_, isPlaying, _) => IconButton(
-              icon: FIcon(
-                isPlaying ? FA.FaPause : FA.FaPlay,
-                color: Colors.white,
-                size: 16,
-              ),
-              onPressed: () => isPlaying
-                  ? service.pauseMusic()
-                  : service.playPlaylist(selectedId),
+          IconButton(
+            icon: FIcon(
+              service.isPlayingMusic ? FA.FaPause : FA.FaPlay,
+              color: Colors.white,
+              size: 16,
             ),
+            onPressed: () => service.isPlayingMusic
+                ? service.pauseMusic()
+                : service.playPlaylist(selectedId),
           ),
           if (selectedId != null)
             IconButton(
@@ -243,6 +242,7 @@ class PlaylistTrackList extends StatelessWidget {
   Widget build(BuildContext context) {
     final tracks = service.visibleTracks;
     final playlist = service.selectedPlaylist;
+    final mainAppController = context.read<MainAppController>();
 
     if (tracks.isEmpty) {
       return Center(
@@ -275,24 +275,18 @@ class PlaylistTrackList extends StatelessWidget {
           dense: true,
           leading: ValueListenableBuilder<String>(
             valueListenable: service.currentTrack,
-            builder: (_, currentTrackValue, _) => ValueListenableBuilder<bool>(
-              valueListenable: service.isPlayingMusic,
-              builder: (_, isPlayingValue, _) {
-                final isCurrentAndPlaying = currentTrackValue == path && isPlayingValue;
-                return IconButton(
-                  icon: FIcon(
-                    isCurrentAndPlaying ? FA.FaPause : FA.FaPlay,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  onPressed: () {
-                    if (isCurrentAndPlaying) {
-                      service.pauseMusic();
-                    } else {
-                      service.playMusic(path);
-                    }
-                  },
-                );
+            builder: (_, currentTrackValue, _) =>  IconButton(
+              icon: FIcon(
+                currentTrackValue == path && service.isPlayingMusic ? FA.FaPause : FA.FaPlay,
+                color: Colors.white,
+                size: 16,
+              ),
+              onPressed: () {
+                if (currentTrackValue == path && service.isPlayingMusic) {
+                  service.pauseMusic();
+                } else {
+                  service.playMusic(path);
+                }
               },
             ),
           ),
@@ -314,7 +308,7 @@ class PlaylistTrackList extends StatelessWidget {
               if (playlist == null && service.playlists.isNotEmpty)
                 PopupMenuButton<String>(
                   tooltip: 'Плейлисты',
-                  color: const Color(0xFF2A2A2A),
+                  color: mainAppController.isDynamicIsland ? const Color.fromARGB(255, 14, 14, 14) : const Color.fromARGB(237, 67, 66, 66),
                   onSelected: (id) {
                     final isIn = inPlaylists.any((p) => p.id == id);
                     if (isIn) {
@@ -353,15 +347,12 @@ class PlaylistTrackList extends StatelessWidget {
                         ),
                       ),
                   ],
-                  child: Padding(
-                    padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      inPlaylists.isEmpty
-                          ? Icons.playlist_add
-                          : Icons.playlist_add_check,
-                      color: Colors.white,
-                      size: 18,
-                    ),
+                  child: Icon(
+                    inPlaylists.isEmpty
+                        ? Icons.playlist_add
+                        : Icons.playlist_add_check,
+                    color: Colors.white,
+                    size: 18,
                   ),
                 ),
               MiniIconButton(

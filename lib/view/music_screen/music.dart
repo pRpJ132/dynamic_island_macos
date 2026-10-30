@@ -86,104 +86,112 @@ class _ExpandedView extends StatelessWidget {
               const SizedBox(height: 6),
               Expanded(
                 flex: 1,
-                child: AnimatedOpacity(
-                  opacity: service.isPlayingMusic.value ? 1 : 0,
-                  duration: Duration(milliseconds: 250),
-                  curve: Curves.easeIn,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                    child: Column(
-                      spacing: 2,
-                      crossAxisAlignment: .end,
-                      children: [
-                        Flexible(
-                          child: Row(
-                            mainAxisAlignment: .spaceBetween,
+                child: ValueListenableBuilder(
+                  valueListenable: service.statusMusic,
+                  builder: (_, statusMusic, _) {
+                    return IgnorePointer(
+                      ignoring: statusMusic == StatusMusic.pause,
+                      child: AnimatedOpacity(
+                        opacity: statusMusic != StatusMusic.pause ? 1 : 0,
+                        duration: Duration(milliseconds: 250),
+                        curve: Curves.easeIn,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                          child: Column(
+                            spacing: 2,
+                            crossAxisAlignment: .end,
                             children: [
-                              if (Platform.isMacOS) ...[
-                                Flexible(
-                                  child: ValueListenableBuilder(
-                                    valueListenable: musicService.waveformsMusic,
-                                    builder: (_, waveformValue, _) {
-                                      return SizedBox(
-                                        width: 39,
-                                        height: 17,
-                                        child: WaveformAnimated(
-                                          player: player,
-                                          waveformValue: waveformValue, 
-                                          isPlaying: musicService.isPlayingMusic,
+                              Flexible(
+                                child: Row(
+                                  mainAxisAlignment: .spaceBetween,
+                                  children: [
+                                    if (Platform.isMacOS) ...[
+                                      Flexible(
+                                        child: ValueListenableBuilder(
+                                          valueListenable: musicService.waveformsMusic,
+                                          builder: (_, waveformValue, _) {
+                                            return SizedBox(
+                                              width: 39,
+                                              height: 17,
+                                              child: WaveformAnimated(
+                                                player: player,
+                                                waveformValue: waveformValue, 
+                                                isPlaying: musicService.isPlayingMusic,
+                                              ),
+                                            );
+                                          },
                                         ),
-                                      );
-                                    },
-                                  ),
+                                      ),
+                                    ] else Flexible(child: SizedBox.expand()),
+                                    Flexible(child: VolumeControl(service: musicService)),
+                                  ],
                                 ),
-                              ] else Flexible(child: SizedBox.expand()),
-                              Flexible(child: VolumeControl(service: musicService)),
+                              ),
+                              Flexible(
+                                child: Row(
+                                  children: [
+                                    StreamBuilder<Duration>(
+                                      stream: player.positionStream,
+                                      builder: (context, snapshot) {
+                                        final position = snapshot.data ?? Duration.zero;
+                                
+                                        return Text(
+                                          formatDuration(position),
+                                          style: const TextStyle(color: Colors.white),
+                                        );
+                                      },
+                                    ),
+                                    Expanded(
+                                      child: SizedBox(
+                                        height: 25,
+                                        child: StreamBuilder<Duration>(
+                                          stream: player.positionStream,
+                                          builder: (context, snapshot) {
+                                            final position = snapshot.data ?? Duration.zero;
+                                            final duration = player.duration ?? Duration.zero;
+                                        
+                                            final max = duration.inMilliseconds.toDouble();
+                                            final value = position.inMilliseconds.clamp(0, max).toDouble();
+                                        
+                                            return ValueListenableBuilder(
+                                              valueListenable: musicService.currentTrack,
+                                              builder: (_, currentTrackValue, _) {
+                                                return Slider(
+                                                  min: 0,
+                                                  max: max == 0 ? 1 : max,
+                                                  value: value,
+                                                  onChanged: (newValue) {
+                                                    player.seek(Duration(milliseconds: newValue.toInt()));
+                                                  },
+                                                  onChangeStart: (_) => musicService.pauseMusic(changePosition: true),
+                                                  onChangeEnd: (_) => musicService.playMusic(currentTrackValue),
+                                                  activeColor: Colors.white,
+                                                  inactiveColor: Colors.grey,
+                                                );
+                                              }
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                    StreamBuilder<Duration?>(
+                                      stream: player.durationStream,
+                                      builder: (context, snapshot) {
+                                        return Text(
+                                          formatDuration(player.duration ?? Duration.zero),
+                                          style: const TextStyle(color: Colors.white),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        Flexible(
-                          child: Row(
-                            children: [
-                              StreamBuilder<Duration?>(
-                                stream: player.durationStream,
-                                builder: (context, snapshot) {
-                                  return Text(
-                                    formatDuration(player.duration ?? Duration.zero),
-                                    style: const TextStyle(color: Colors.white),
-                                  );
-                                },
-                              ),
-                              Expanded(
-                                child: SizedBox(
-                                  height: 25,
-                                  child: StreamBuilder<Duration>(
-                                    stream: player.positionStream,
-                                    builder: (context, snapshot) {
-                                      final position = snapshot.data ?? Duration.zero;
-                                      final duration = player.duration ?? Duration.zero;
-                                  
-                                      final max = duration.inMilliseconds.toDouble();
-                                      final value = position.inMilliseconds.clamp(0, max).toDouble();
-                                  
-                                      return ValueListenableBuilder(
-                                        valueListenable: musicService.currentTrack,
-                                        builder: (_, currentTrackValue, _) {
-                                          return Slider(
-                                            min: 0,
-                                            max: max == 0 ? 1 : max,
-                                            value: value,
-                                            onChanged: (newValue) {
-                                              player.seek(Duration(milliseconds: newValue.toInt()));
-                                            },
-                                            onChangeStart: (value) => musicService.pauseMusic(),
-                                            onChangeEnd: (value) => musicService.playMusic(currentTrackValue),
-                                            activeColor: Colors.white,
-                                            inactiveColor: Colors.grey,
-                                          );
-                                        }
-                                      );
-                                    },
-                                  ),
-                                ),
-                              ),
-                              StreamBuilder<Duration>(
-                                stream: player.positionStream,
-                                builder: (context, snapshot) {
-                                  final position = snapshot.data ?? Duration.zero;
-                          
-                                  return Text(
-                                    formatDuration(position),
-                                    style: const TextStyle(color: Colors.white),
-                                  );
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  }
                 ),
               ),
             ],
@@ -311,7 +319,7 @@ class VolumeControl extends StatelessWidget {
 class WaveformAnimated extends StatefulWidget {
   final AudioPlayer player;
   final Waveform waveformValue;
-  final ValueNotifier<bool> isPlaying;
+  final bool isPlaying;
   const WaveformAnimated({super.key, required this.player, required this.waveformValue, required this.isPlaying});
 
   @override
@@ -349,7 +357,7 @@ class _WaveformAnimatedState extends State<WaveformAnimated> with SingleTickerPr
     _timer = Timer.periodic(const Duration(milliseconds: 25), (timer) {
       if (!mounted) return;
 
-      if (!widget.isPlaying.value) {
+      if (!widget.isPlaying) {
         _visualPhase.value += 0.00001;
         return;
       }
@@ -375,22 +383,17 @@ class _WaveformAnimatedState extends State<WaveformAnimated> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    handlePause(widget.isPlaying);
     return ValueListenableBuilder(
-      valueListenable: widget.isPlaying,
-      builder: (_, isPlayingValue, _) {
-        handlePause(isPlayingValue);
-        return ValueListenableBuilder(
-          valueListenable: _visualPhase,
-          builder: (_, visualPhaseValue, _) => CustomPaint(
-            painter: WaveformPainter(
-              widget.waveformValue,
-              phase: visualPhaseValue,
-              previousHeights: _previousHeights, 
-              isPlayng: isPlayingValue,
-            ),
-          )
-        );
-      }
+      valueListenable: _visualPhase,
+      builder: (_, visualPhaseValue, _) => CustomPaint(
+        painter: WaveformPainter(
+          widget.waveformValue,
+          phase: visualPhaseValue,
+          previousHeights: _previousHeights, 
+          isPlayng: widget.isPlaying,
+        ),
+      )
     );
   }
 }

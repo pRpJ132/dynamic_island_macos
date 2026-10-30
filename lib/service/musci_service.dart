@@ -26,6 +26,7 @@ class Playlist {
 }
 
 enum RepeatMode { off, all, one }
+enum StatusMusic { play, pause, changePosition }
 
 class MusicService extends ChangeNotifier {
   static const String _keyLibrary = 'music_list';
@@ -41,12 +42,15 @@ class MusicService extends ChangeNotifier {
 
   String? _selectedPlaylistId;
 
+  ValueNotifier<StatusMusic> statusMusic = ValueNotifier(StatusMusic.pause);
+
+  bool get isPlayingMusic => statusMusic.value == StatusMusic.play;
+
   List<String> get music => _musicPaths;
   List<Playlist> get playlists => List.unmodifiable(_playlists);
   String? get selectedPlaylistId => _selectedPlaylistId;
 
-  Playlist? get selectedPlaylist =>
-      _playlists.where((p) => p.id == _selectedPlaylistId).firstOrNull;
+  Playlist? get selectedPlaylist => _playlists.where((p) => p.id == _selectedPlaylistId).firstOrNull;
 
   List<String> get visibleTracks => selectedPlaylist?.tracks ?? _musicPaths;
 
@@ -69,13 +73,10 @@ class MusicService extends ChangeNotifier {
         } else {
           _queueIndex = -1;
           _orderPos = -1;
-          isPlayingMusic.value = false;
+          statusMusic.value = StatusMusic.pause;
           currentTrack.value = "";
           notifyListeners();
         }
-      } else {
-        isPlayingMusic.value = state.playing;
-        notifyListeners();
       }
     });
   }
@@ -142,7 +143,6 @@ class MusicService extends ChangeNotifier {
     if (changed) await _commit();
   }
 
-  /// Удаляет трек из библиотеки и из всех плейлистов
   Future<void> removeMusic(String path) async {
     _musicPaths.remove(path);
     for (final p in _playlists) {
@@ -283,6 +283,8 @@ class MusicService extends ChangeNotifier {
     _queueIndex = shuffleEnabled.value ? _random.nextInt(tracks.length) : 0;
     _rebuildOrder();
     await _playIndex(_queueIndex);
+    statusMusic.value = StatusMusic.play;
+    notifyListeners();
   }
 
   Future<void> next() async {
@@ -338,7 +340,6 @@ class MusicService extends ChangeNotifier {
 
   final AudioPlayer playerMusic = AudioPlayer();
   final ValueNotifier<String> currentTrack = ValueNotifier("");
-  final ValueNotifier<bool> isPlayingMusic = ValueNotifier(false);
   final ValueNotifier<Waveform> waveformsMusic = ValueNotifier(Waveform(
       version: 0,
       flags: 0,
@@ -384,13 +385,17 @@ class MusicService extends ChangeNotifier {
         await _loadTrack(path);
       }
       await playerMusic.play();
+      statusMusic.value = StatusMusic.play;
+      notifyListeners();
     } catch (e) {
       debugPrint('Audio error: $e');
     }
   }
 
-  Future<void> pauseMusic() async {
+  Future<void> pauseMusic({bool? changePosition}) async {
     await playerMusic.pause();
+    statusMusic.value = changePosition == true ? StatusMusic.changePosition : StatusMusic.pause;
+    notifyListeners();
   }
 
   Future<Waveform?> _extractWaveform(String path) async {

@@ -97,61 +97,59 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
               ),
             ),
             Consumer<MusicService>(
-              builder: (_, musicService, _) => ValueListenableBuilder(
-                valueListenable: musicService.isPlayingMusic,
-                builder: (_, isPlayingMusicValue, _) {
-                  return Row(
-                    mainAxisAlignment: isPlayingMusicValue ? .spaceBetween : .center,
-                    children: [
-                      if (isPlayingMusicValue)
-                      _buildMusicWidget(mainAppController.isExpanded, musicService),
-                      Flexible(
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 450),
-                          curve: Curves.easeOut,
-                          padding: EdgeInsets.only(
-                            top: isPlayingMusicValue && mainAppController.isExpanded ? 25 : 0,
-                            bottom: mainAppController.isExpanded ? 0 : isPlayingMusicValue ? 5.3 : mainAppController.isDynamicIsland ? 18 : 0,
-                          ),
-                          child: ValueListenableBuilder<String>(
-                            valueListenable: _time,
-                            builder: (_, value, _) {
-                              return AnimatedAlign(
+              builder: (_, musicService, _) {
+                bool isPlayingMusicValue = musicService.isPlayingMusic;
+                return Row(
+                  mainAxisAlignment: isPlayingMusicValue ? .spaceBetween : .center,
+                  children: [
+                    if (isPlayingMusicValue)
+                    _buildMusicWidget(mainAppController.isExpanded, musicService),
+                    Flexible(
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 450),
+                        curve: Curves.easeOut,
+                        padding: EdgeInsets.only(
+                          top: isPlayingMusicValue && mainAppController.isExpanded ? 25 : 0,
+                          bottom: mainAppController.isExpanded ? 0 : isPlayingMusicValue ? 5.3 : mainAppController.isDynamicIsland ? 18 : 0,
+                        ),
+                        child: ValueListenableBuilder<String>(
+                          valueListenable: _time,
+                          builder: (_, value, _) {
+                            return AnimatedAlign(
+                              duration: const Duration(milliseconds: 450),
+                              curve: Curves.easeOut,
+                              alignment: mainAppController.isExpanded && !isPlayingMusicValue ? Alignment.center : isPlayingMusicValue 
+                                && mainAppController.isExpanded ? Alignment.topCenter : mainAppController.isDynamicIsland || isPlayingMusicValue ? Alignment.bottomCenter : Alignment.center,
+                              child: AnimatedDefaultTextStyle(
                                 duration: const Duration(milliseconds: 450),
                                 curve: Curves.easeOut,
-                                alignment: mainAppController.isExpanded && !isPlayingMusicValue ? Alignment.center : isPlayingMusicValue 
-                                  && mainAppController.isExpanded ? Alignment.topCenter : mainAppController.isDynamicIsland || isPlayingMusicValue ? Alignment.bottomCenter : Alignment.center,
-                                child: AnimatedDefaultTextStyle(
-                                  duration: const Duration(milliseconds: 450),
-                                  curve: Curves.easeOut,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(
-                                      alpha: mainAppController.isExpanded ? 0.9 : 1,
-                                    ),
-                                    fontSize: mainAppController.isExpanded ? isPlayingMusicValue ? 16 : 24 : 14,
-                                    fontWeight: mainAppController.isExpanded
-                                        ? FontWeight.w300
-                                        : FontWeight.w400,
+                                style: TextStyle(
+                                  color: Colors.white.withValues(
+                                    alpha: mainAppController.isExpanded ? 0.9 : 1,
                                   ),
-                                  child: SizedBox(
-                                    width: isPlayingMusicValue ? 100 : null,
-                                    child: Text(
-                                      textAlign: TextAlign.center,
-                                      isPlayingMusicValue ? "${value.substring(0, 8)} ${value.substring(10)}" : value,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
+                                  fontSize: mainAppController.isExpanded ? isPlayingMusicValue ? 16 : 24 : 14,
+                                  fontWeight: mainAppController.isExpanded
+                                      ? FontWeight.w300
+                                      : FontWeight.w400,
+                                ),
+                                child: SizedBox(
+                                  width: isPlayingMusicValue ? 100 : null,
+                                  child: Text(
+                                    textAlign: TextAlign.center,
+                                    isPlayingMusicValue ? "${value.substring(0, 8)} ${value.substring(10)}" : value,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            );
+                          },
                         ),
                       ),
-                    ],
-                  );
-                }
-              ),
+                    ),
+                  ],
+                );
+              }
             ),
           ],
         );

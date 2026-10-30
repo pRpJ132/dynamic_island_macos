@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
-import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/app_service.dart';
 import 'package:dynamic_lake_macos/service/icon_service.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
@@ -230,48 +229,40 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
           },
           onDragEntered: (detail) async {
             _dragging.value = true;
-            mainAppController.sizeWindow = SizeWindowObject(
-              expandedSizeBaseDynamicIsland: Size(420, 160)
-            );
-            if (!mainAppController.isDynamicIsland) {
-              mainAppController.resizeWindow(Size(140, 140));
-            }
           },
           onDragExited: (detail) {
             _dragging.value = false;
-            mainAppController.sizeWindow = mainAppController.sizeWindowObjects[mainAppController.stateScreen];
-            mainAppController.stateApp = IslandState.collapsed;
-            mainAppController.resizeWindow(mainAppController.isDynamicIsland ? mainAppController.sizeWindow.collapsedSizeBaseDynamicIsland : mainAppController.sizeWindow.collapsedSize);
           },
           child: ValueListenableBuilder(
             valueListenable: pageIndex,
             builder: (_, pageIndexValue, _) {
               return ValueListenableBuilder(
-                valueListenable: _dragging, 
-                builder: (_, draggingValue, _) => !draggingValue ? AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 70),
-                  switchInCurve: Curves.easeIn,
-                  switchOutCurve: Curves.easeOut,
-                  child: GestureDetector(
-                  key: ValueKey('page_$pageIndexValue'),
-                  onPanStart: (_) async => (
-                    mainAppController.isDynamicIsland || 
-                    mainAppController.isAnimating || 
-                    mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
-                  onTap: () {
-                    if (mainAppController.animatedChangeDynamicIsland) return;
-                    if (!mainAppController.isDynamicIsland) {
-                      if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
-                      try { 
-                        mainAppController.requestState();
-                      } catch (_) {}
-                    } else {
-                      nextPage(mainAppController);
-                    }
-                  },
-                  child: buildScaffoldMain(pageDynamicIsland.values.elementAt(pageIndexValue))),
-                ) 
-                : buildScaffoldMain(DynamicIslandDropFile(), key: ValueKey('page_$pageIndexValue'))
+                valueListenable: _dragging,
+                builder: (_, draggingValue, _) {
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 125),
+                    child: GestureDetector(
+                    key: ValueKey(!draggingValue ? 'page_$pageIndexValue' : 'page_dropfile'),
+                    child: !draggingValue ? GestureDetector(
+                    onPanStart: (_) async => (
+                      mainAppController.isDynamicIsland || 
+                      mainAppController.isAnimating || 
+                      mainAppController.animatedChangeDynamicIsland) ? null : windowManager.startDragging(),
+                    onTap: () {
+                      if (mainAppController.animatedChangeDynamicIsland) return;
+                      if (!mainAppController.isDynamicIsland) {
+                        if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
+                        try { 
+                          mainAppController.requestState();
+                        } catch (_) {}
+                      } else {
+                        nextPage(mainAppController);
+                      }
+                    },
+                    child: buildScaffoldMain(pageDynamicIsland.values.elementAt(pageIndexValue))) 
+                    : buildScaffoldMain(DynamicIslandDropFile()),
+                  ));
+                }
               );
             }
           )
