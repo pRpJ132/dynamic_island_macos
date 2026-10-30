@@ -10,7 +10,7 @@ import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 import 'package:dynamic_lake_macos/view/app_open.dart';
 import 'package:dynamic_lake_macos/view/drop_file.dart';
 import 'package:dynamic_lake_macos/view/main_widgets.dart';
-import 'package:dynamic_lake_macos/view/music.dart';
+import 'package:dynamic_lake_macos/view/music_screen/music.dart';
 import 'package:dynamic_lake_macos/view/search.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

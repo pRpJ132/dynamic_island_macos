@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
-import 'package:dynamic_lake_macos/view/music.dart';
+import 'package:dynamic_lake_macos/view/music_screen/music.dart';
 import 'package:dynamic_lake_macos/view/service/battery_icon.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
