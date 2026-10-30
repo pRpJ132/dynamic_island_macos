@@ -13,6 +13,8 @@
 #include <dwmapi.h>
 #include <objidl.h>
 #include <shellapi.h>
+#include <shlobj.h>
+#include <shobjidl.h>
 
 #include <algorithm>
 #include <chrono>
@@ -35,6 +37,7 @@ using std::min;
 #pragma comment(lib, "gdiplus.lib")
 #pragma comment(lib, "shell32.lib")
 #pragma comment(lib, "ole32.lib")
+#pragma comment(lib, "uuid.lib")
 #pragma comment(lib, "user32.lib")
 #pragma comment(lib, "gdi32.lib")
 
@@ -461,6 +464,41 @@ std::optional<std::vector<uint8_t>> GetIconPng(const std::wstring& path) {
   return out;
 }
 
+std::string WideToUtf8(const std::wstring& w) {
+  if (w.empty()) return "";
+  int n = WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), nullptr, 0,
+                              nullptr, nullptr);
+  std::string s(n, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, w.data(), (int)w.size(), s.data(), n, nullptr,
+                      nullptr);
+  return s;
+}
+
+// Возвращает путь, на который указывает ярлык .lnk (COM уже инициализирован
+// раннером Flutter в main.cpp).
+std::optional<std::wstring> ResolveShortcut(const std::wstring& lnkPath) {
+  IShellLinkW* link = nullptr;
+  if (FAILED(CoCreateInstance(CLSID_ShellLink, nullptr, CLSCTX_INPROC_SERVER,
+                              IID_PPV_ARGS(&link)))) {
+    return std::nullopt;
+  }
+  std::optional<std::wstring> out;
+  IPersistFile* file = nullptr;
+  if (SUCCEEDED(link->QueryInterface(IID_PPV_ARGS(&file)))) {
+    if (SUCCEEDED(file->Load(lnkPath.c_str(), STGM_READ))) {
+      link->Resolve(nullptr, SLR_NO_UI | SLR_NOSEARCH);
+      wchar_t target[MAX_PATH] = {0};
+      if (SUCCEEDED(link->GetPath(target, MAX_PATH, nullptr, 0)) &&
+          target[0] != L'\0') {
+        out = std::wstring(target);
+      }
+    }
+    file->Release();
+  }
+  link->Release();
+  return out;
+}
+
 // ---------------------------------------------------------------------------
 // Контроллер окна (аналог методов MainFlutterWindow)
 // ---------------------------------------------------------------------------
@@ -681,12 +719,26 @@ void SetupWindowChannels(flutter::BinaryMessenger* messenger, HWND hwnd) {
       messenger, "app.icon", &flutter::StandardMethodCodec::GetInstance());
   g_iconChannel->SetMethodCallHandler(
       [](const MethodCall& call, std::unique_ptr<flutter::MethodResult<EncodableValue>> result) {
+        auto* args = std::get_if<EncodableMap>(call.arguments());
+        auto path = args ? GetStr(*args, "path") : std::nullopt;
+
+        if (call.method_name() == "resolveShortcut") {
+          if (!path) {
+            result->Success(EncodableValue());
+            return;
+          }
+          auto target = ResolveShortcut(Utf8ToWide(*path));
+          if (!target) {
+            result->Success(EncodableValue());  // не удалось -> null
+            return;
+          }
+          result->Success(EncodableValue(WideToUtf8(*target)));
+          return;
+        }
         if (call.method_name() != "getIcon") {
           result->NotImplemented();
           return;
         }
-        auto* args = std::get_if<EncodableMap>(call.arguments());
-        auto path = args ? GetStr(*args, "path") : std::nullopt;
         if (!path) {
           result->Success(EncodableValue());  // nil
           return;

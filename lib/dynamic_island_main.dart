@@ -4,6 +4,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/app_service.dart';
+import 'package:dynamic_lake_macos/service/icon_service.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:dynamic_lake_macos/shape/concave_corners_clipper.dart';
 import 'package:dynamic_lake_macos/view/app_open.dart';
@@ -238,13 +239,23 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return DropTarget(
-          onDragDone: (detail) {
+          onDragDone: (detail) async {
+            final musicService = context.read<MusicService>();
+            final appService = context.read<AppService>();
+
             for (final file in detail.files) {
-              if (file.name.toLowerCase().endsWith('.mp3')) {
-                context.read<MusicService>().addMusic(file.path);
-              } else if ((Platform.isMacOS && file.name.toLowerCase().endsWith('.app')) 
-                || (Platform.isWindows && file.name.toLowerCase().endsWith('.exe'))) {
-                context.read<AppService>().addApp(file.path);
+              final name = file.name.toLowerCase();
+
+              if (name.endsWith('.mp3')) {
+                musicService.addMusic(file.path);
+              } else if (Platform.isMacOS && name.endsWith('.app')) {
+                appService.addApp(file.path);
+              } else if (Platform.isWindows &&
+                  (name.endsWith('.exe') || name.endsWith('.lnk') || name.endsWith('.url'))) {
+                final path = name.endsWith('.url')
+                    ? file.path
+                    : await IconService().resolveAppPath(file.path);
+                appService.addApp(path);
               }
             }
           },

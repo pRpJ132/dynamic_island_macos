@@ -143,24 +143,32 @@ class _ExpandedView extends StatelessWidget {
                   spacing: 2,
                   crossAxisAlignment: .end,
                   children: [
-                    if (Platform.isMacOS)
-                      Flexible(
-                        child: ValueListenableBuilder(
-                          valueListenable: musicService.waveformsMusic,
-                          builder: (_, waveformValue, _) {
-                            return SizedBox(
-                              width: 39,
-                              height: 17,
-                              child: WaveformAnimated(
-                                player: player,
-                                waveformValue: waveformValue, 
-                                isPlaying: musicService.isPlayingMusic,
+                    Flexible(
+                      child: Row(
+                        mainAxisAlignment: .spaceBetween,
+                        children: [
+                          if (Platform.isMacOS) ...[
+                            Flexible(
+                              child: ValueListenableBuilder(
+                                valueListenable: musicService.waveformsMusic,
+                                builder: (_, waveformValue, _) {
+                                  return SizedBox(
+                                    width: 39,
+                                    height: 17,
+                                    child: WaveformAnimated(
+                                      player: player,
+                                      waveformValue: waveformValue, 
+                                      isPlaying: musicService.isPlayingMusic,
+                                    ),
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          ] else Flexible(child: SizedBox.expand()),
+                          Flexible(child: VolumeControl(service: musicService)),
+                        ],
                       ),
-                    Flexible(child: VolumeControl(service: musicService)),
+                    ),
                     Flexible(
                       child: Row(
                         children: [

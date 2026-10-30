@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:dynamic_lake_macos/service/mac_icon_service.dart';
+import 'package:dynamic_lake_macos/service/icon_service.dart';
 import 'package:path_provider/path_provider.dart';
 
 class DiskCache {
@@ -79,7 +79,7 @@ class IconRepository {
           return disk;
         }
 
-        final icon = await MacIconService.getIcon(path);
+        final icon = await IconService.getIcon(path);
 
         if (icon != null) {
           memoryCache.put(path, icon);
