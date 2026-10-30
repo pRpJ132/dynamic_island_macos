@@ -33,11 +33,11 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   bool nextPageAnimated = false;
 
   void nextPage(MainAppController mainAppController, {int? page}) {
-    if (nextPageAnimated == true) return;
+    if (nextPageAnimated || _mainAppController.animatedChangeDynamicIsland || _mainAppController.isAnimating) return;
     nextPageAnimated = true;
     int newPage = pageIndex.value;
     if (page == null) {
-      pageIndex.value == pageDynamicIsland.length - 1 ? newPage = 0 : newPage++;
+      pageIndex.value >= pageDynamicIslandMax - 1 ? newPage = 0 : newPage++;
     } else {
       newPage = page;
     }
@@ -48,7 +48,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       nextPageAnimated = false;
     });
     mainAppController.stateScreen = pageDynamicIsland.keys.elementAt(newPage);
-    mainAppController.sizeWindow = sizeWindowObjects[mainAppController.stateScreen];
+    mainAppController.sizeWindow = mainAppController.sizeWindowObjects[mainAppController.stateScreen];
     if (mainAppController.isDynamicIsland) {
       mainAppController.isExpanded
       ? mainAppController.resizeWindow(mainAppController.sizeWindow.expandedSizeBaseDynamicIsland)
@@ -96,7 +96,9 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
 
         if (_mainAppController.isDynamicIsland) {
           if (_mainAppController.clickThrough) {
-            await _mainAppController.requestState(IslandState.collapsed);
+            _mainAppController.requestState(newState: IslandState.collapsed);
+          } else if (!_mainAppController.hideApp) {
+            windowManager.show();
           }
         }
         await windowManager.setIgnoreMouseEvents(
@@ -108,9 +110,8 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
 
     await hotKeyManager.register(
       hideHotKey,
-      keyDownHandler: (_) async {
-        _mainAppController.activatedHide = !_mainAppController.activatedHide;
-        await _mainAppController.hidenApp();
+      keyDownHandler: (_) {
+        _mainAppController.hidenApp();
       },
     );
 
@@ -127,7 +128,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
         try {
           if (_mainAppController.isAnimating || _mainAppController.animatedChangeDynamicIsland) return;
           _mainAppController.animatedChangeDynamicIsland = true;
-          await _mainAppController.requestState(IslandState.collapsed);
+          await _mainAppController.requestState(newState: IslandState.collapsed, waitResized: true);
           Future.delayed(const Duration(milliseconds: 550), () {
             _mainAppController.isDynamicIsland = !_mainAppController.isDynamicIsland;
             windowManager.setIgnoreMouseEvents(
@@ -136,10 +137,10 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
             );
           });
           await notchChannel.invokeMethod('moveToNotch', {
-            'width': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize.width,
-            'height': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize.height,
-            'height_dynamic_island': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSizeBaseDynamicIsland.height,
-            'width_dynamic_island': sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSizeBaseDynamicIsland.width,
+            'width': _mainAppController.sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize.width,
+            'height': _mainAppController.sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize.height,
+            'height_dynamic_island': _mainAppController.sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSizeBaseDynamicIsland.height,
+            'width_dynamic_island': _mainAppController.sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSizeBaseDynamicIsland.width,
           });
           _mainAppController.animatedChangeDynamicIsland = false;
         } catch (e) {
@@ -171,7 +172,6 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
       await hotKeyManager.register(
         hotKey,
         keyDownHandler: (hotKey) {
-          if (pageDynamicIslandMax < pressedNumber || _mainAppController.animatedChangeDynamicIsland || _mainAppController.isAnimating) return;
           nextPage(_mainAppController, page: pressedNumber-1);
         },
       );
@@ -180,7 +180,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
 
   Future<void> initWindowSize() async {
     await windowManager.waitUntilReadyToShow(WindowOptions(
-      size: sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize,
+      size: _mainAppController.sizeWindowObjects[_mainAppController.stateScreen]!.collapsedSize,
       center: true,
     ), () {});
   }
@@ -201,41 +201,12 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
     StateScreen.search: DynamicIslandSearch(),
 
     StateScreen.mainMusic: DynamicIslandMainWidgets(),
-  };
-
-  Map<StateScreen, SizeWindowObject> sizeWindowObjects = {
-    StateScreen.main: SizeWindowObject(
-      collapsedSize: Size(260, 80),
-      collapsedSizeBaseDynamicIsland: Size(420, 75)
-    ),
-    StateScreen.music: SizeWindowObject(
-      collapsedSizeBaseDynamicIsland: Size(420, 48),
-      expandedSize: Size(360, 290),
-      expandedSizeBaseDynamicIsland: Size(420, 270),
-    ),
-    StateScreen.app: SizeWindowObject(
-      collapsedSize: Size(420, 95),
-      expandedSize: Size(420, 170),
-      collapsedSizeBaseDynamicIsland: Size(420, 95),
-      expandedSizeBaseDynamicIsland: Size(420, 170),
-    ),
-    StateScreen.search: SizeWindowObject(
-      collapsedSize: Size(320, 50),
-      expandedSize: Size(420, 310),
-      collapsedSizeBaseDynamicIsland: Size(420, 75),
-      expandedSizeBaseDynamicIsland: Size(420, 310),
-    ),
-
-    StateScreen.mainMusic: SizeWindowObject(
-      collapsedSize: Size(400, 80),
-      expandedSize: Size(400, 170),
-      collapsedSizeBaseDynamicIsland: Size(420, 75),
-    ),
+    StateScreen.musicPlaylists: DynamicIslandMusic(),
   };
 
   @override
   Widget build(BuildContext context) {
-    _mainAppController.sizeWindow = sizeWindowObjects[_mainAppController.stateScreen];
+    _mainAppController.sizeWindow = _mainAppController.sizeWindowObjects[_mainAppController.stateScreen];
     return Consumer<MainAppController>(
       builder: (_, mainAppController, _) {
         return DropTarget(
@@ -270,7 +241,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
           },
           onDragExited: (detail) {
             _dragging.value = false;
-            mainAppController.sizeWindow = sizeWindowObjects[mainAppController.stateScreen];
+            mainAppController.sizeWindow = mainAppController.sizeWindowObjects[mainAppController.stateScreen];
             mainAppController.stateApp = IslandState.collapsed;
             mainAppController.resizeWindow(mainAppController.isDynamicIsland ? mainAppController.sizeWindow.collapsedSizeBaseDynamicIsland : mainAppController.sizeWindow.collapsedSize);
           },
@@ -294,7 +265,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
                     if (!mainAppController.isDynamicIsland) {
                       if (mainAppController.isAnimating || mainAppController.animatedChangeDynamicIsland) return;
                       try { 
-                        mainAppController.requestState(mainAppController.stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
+                        mainAppController.requestState();
                       } catch (_) {}
                     } else {
                       nextPage(mainAppController);

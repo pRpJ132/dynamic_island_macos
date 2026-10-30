@@ -13,6 +13,7 @@ enum StateScreen {
   main,
   mainMusic,
   music,
+  musicPlaylists,
   app,
   search,
 }
@@ -20,11 +21,45 @@ enum StateScreen {
 class MainAppController extends ChangeNotifier {
   bool hideApp = false;
   bool clickThrough = false;
-  bool activatedHide = false;
   Timer? _hoverPollTimer;
   late StreamSubscription _sub;
   late Battery battery;
   ValueNotifier<int?> batteryLevel = ValueNotifier(null);
+
+  Map<StateScreen, SizeWindowObject> sizeWindowObjects = {
+    StateScreen.main: SizeWindowObject(
+      collapsedSize: Size(260, 80),
+      collapsedSizeBaseDynamicIsland: Size(420, 75)
+    ),
+    StateScreen.music: SizeWindowObject(
+      collapsedSizeBaseDynamicIsland: Size(420, 48),
+      expandedSize: Size(360, 290),
+      expandedSizeBaseDynamicIsland: Size(420, 270),
+    ),
+    StateScreen.app: SizeWindowObject(
+      collapsedSize: Size(420, 95),
+      expandedSize: Size(420, 170),
+      collapsedSizeBaseDynamicIsland: Size(420, 95),
+      expandedSizeBaseDynamicIsland: Size(420, 170),
+    ),
+    StateScreen.search: SizeWindowObject(
+      collapsedSize: Size(320, 50),
+      expandedSize: Size(420, 310),
+      collapsedSizeBaseDynamicIsland: Size(420, 75),
+      expandedSizeBaseDynamicIsland: Size(420, 310),
+    ),
+
+    StateScreen.mainMusic: SizeWindowObject(
+      collapsedSize: Size(400, 80),
+      expandedSize: Size(400, 170),
+      collapsedSizeBaseDynamicIsland: Size(420, 75),
+    ),
+    StateScreen.musicPlaylists: SizeWindowObject(
+      collapsedSizeBaseDynamicIsland: Size(420, 48),
+      expandedSize: Size(360, 390),
+      expandedSizeBaseDynamicIsland: Size(420, 470),
+    ),
+  };
 
   bool _animatedChangeDynamicIsland = false;
   bool get animatedChangeDynamicIsland => _animatedChangeDynamicIsland;
@@ -94,80 +129,48 @@ class MainAppController extends ChangeNotifier {
   }
 
   IslandState _targetState = IslandState.collapsed;
-  bool _isAnimating = false;
-  bool get isAnimating => _isAnimating;
-  set isAnimating(bool v) {
-    _isAnimating = v;
-    notifyListeners();
-  }
+  bool isAnimating = false;
 
   bool _mouseInside = false;
   static const _channel = MethodChannel('window/animation');
 
   Future<void> _pollMousePosition() async {
-    if (!isDynamicIsland || _isAnimating || _animatedChangeDynamicIsland || activatedHide) return;
-    bool inside = false;
+    if (!isDynamicIsland || isAnimating || _animatedChangeDynamicIsland || hideApp) return;
     try {
-      inside = await _channel.invokeMethod<bool>('isMouseInsideWindow') ?? false;
+      _mouseInside = await _channel.invokeMethod<bool>('isMouseInsideWindow') ?? false;
     } catch (_) {
     }
 
-    if (inside == _mouseInside) return;
-
-    _mouseInside = inside;
     if (!clickThrough) {
-      _requestState(inside ? IslandState.expanded : IslandState.collapsed);
-    } else{
-      !_mouseInside ? hidenApp(hiden: true) : hidenApp(hiden: false);
+      requestState(newState: _mouseInside ? IslandState.expanded : IslandState.collapsed);
+    } else if (!hideApp) {
+      _mouseInside ? windowManager.hide() : windowManager.show();
     }
   }
 
-  void _requestState(IslandState newState) {
-    _targetState = newState;
-    if (isAnimating) return;
-    if (stateApp == _targetState) return;
+  Future<void> requestState({IslandState? newState, bool waitResized = false}) async {
+    _targetState = newState ?? (stateApp == IslandState.expanded ? IslandState.collapsed : IslandState.expanded);
+    if (isAnimating || stateApp == _targetState) return;
 
     isAnimating = true;
     final animatingTo = _targetState;
 
     stateApp = animatingTo;
-
     final size = animatingTo == IslandState.expanded
         ? isDynamicIsland ? _sizeWindow.expandedSizeBaseDynamicIsland : _sizeWindow.expandedSize
         : isDynamicIsland ? _sizeWindow.collapsedSizeBaseDynamicIsland : _sizeWindow.collapsedSize;
 
     try {
-      resizeWindow(size);
+      waitResized ? await resizeWindow(size) : resizeWindow(size);
     } catch (_) {}
-
     isAnimating = false;
 
-    final correctTarget = _mouseInside ? IslandState.expanded : IslandState.collapsed;
-    if (stateApp != correctTarget && isDynamicIsland) {
-      _targetState = correctTarget;
-      _requestState(_targetState);
-    }
-  }
-
-  Future<void> requestState(IslandState newState) async {
-    _targetState = newState;
-    if (isAnimating) return;
-    if (stateApp == _targetState) return;
-
-    isAnimating = true;
-    final animatingTo = _targetState;
-
-    stateApp = animatingTo;
-
-    final size = animatingTo == IslandState.expanded
-        ? isDynamicIsland ? _sizeWindow.expandedSizeBaseDynamicIsland : _sizeWindow.expandedSize
-        : isDynamicIsland ? _sizeWindow.collapsedSizeBaseDynamicIsland : _sizeWindow.collapsedSize;
-
-    try {
-      await resizeWindow(size);
-    } catch (_) {}
-
-    isAnimating = false;
+    // final correctTarget = _mouseInside ? IslandState.expanded : IslandState.collapsed;
+    // if (stateApp != correctTarget && isDynamicIsland) {
+    //   _targetState = correctTarget;
+    //   waitResized ? await requestState(newState: _targetState, waitResized: waitResized) 
+    //   : requestState(newState: _targetState, waitResized: waitResized);
+    // }
   }
 
   Future<void> resizeWindow(Size size, {String? curve, double? duration}) async {
@@ -179,20 +182,13 @@ class MainAppController extends ChangeNotifier {
     });
   }
 
-  Future<void> hidenApp({final bool? hiden}) async {
-    if (activatedHide) {
-      await windowManager.hide();
-      hideApp = true;
-      return;
-    }
-
-    if (hiden ?? hideApp) {
-      await windowManager.show();
-      await windowManager.focus();
-      hideApp = false;
+  void hidenApp() {
+    hideApp = !hideApp;
+    if (hideApp) {
+      windowManager.hide();
+      requestState(newState: IslandState.collapsed);
     } else {
-      await windowManager.hide();
-      hideApp = true;
+      windowManager.show();
     }
   }
 }
