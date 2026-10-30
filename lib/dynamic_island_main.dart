@@ -60,24 +60,31 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
   }
 
   void initKeyBind() async {
+    List<HotKeyModifier>? modifiersConf;
+    if (Platform.isWindows) {
+      modifiersConf = [HotKeyModifier.alt];
+    } else if (Platform.isMacOS) {
+      modifiersConf = [HotKeyModifier.meta];
+    }
+
     final throughHotKey = HotKey(
       key: PhysicalKeyboardKey.keyT,
-      modifiers: [HotKeyModifier.meta],
+      modifiers: modifiersConf,
     );
 
     final hideHotKey = HotKey(
       key: PhysicalKeyboardKey.keyH,
-      modifiers: [HotKeyModifier.meta],
+      modifiers: modifiersConf,
     );
 
     final quitHotKey = HotKey(
       key: PhysicalKeyboardKey.keyQ,
-      modifiers: [HotKeyModifier.meta],
+      modifiers: modifiersConf,
     );
 
     final dynamicIslandHotKey = HotKey(
       key: PhysicalKeyboardKey.keyD,
-      modifiers: [HotKeyModifier.meta],
+      modifiers: modifiersConf,
     );
 
 
@@ -157,7 +164,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
 
       HotKey hotKey = HotKey(
         key: digitalKeys[i],
-        modifiers: [HotKeyModifier.meta], 
+        modifiers: modifiersConf, 
       );
 
       await hotKeyManager.register(
@@ -235,7 +242,8 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
             for (final file in detail.files) {
               if (file.name.toLowerCase().endsWith('.mp3')) {
                 context.read<MusicService>().addMusic(file.path);
-              } else if (file.name.toLowerCase().endsWith('.app')) {
+              } else if ((Platform.isMacOS && file.name.toLowerCase().endsWith('.app')) 
+                || (Platform.isWindows && file.name.toLowerCase().endsWith('.exe'))) {
                 context.read<AppService>().addApp(file.path);
               }
             }

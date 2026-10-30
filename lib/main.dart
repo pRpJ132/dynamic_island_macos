@@ -1,24 +1,20 @@
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/dynamic_island_main.dart';
-import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/app_service.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:flutter/material.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:provider/provider.dart';
 import 'package:window_manager/window_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ru', null);
+  JustAudioMediaKit.ensureInitialized();
   await windowManager.ensureInitialized();
   await hotKeyManager.unregisterAll();
-
-  await windowManager.waitUntilReadyToShow(WindowOptions(
-    size: SizeWindowObject().collapsedSize,
-    center: true,
-  ), () {});
 
   runApp(
     MultiProvider(

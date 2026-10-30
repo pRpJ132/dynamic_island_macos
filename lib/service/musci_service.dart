@@ -71,15 +71,27 @@ class MusicService extends ChangeNotifier {
   final ValueNotifier<bool> isPlayingMusic = ValueNotifier(false);
   final ValueNotifier<Waveform> waveformsMusic = ValueNotifier(Waveform(version: 0, flags: 0, sampleRate: 0, samplesPerPixel: 0, length: 0, data: []));
   late final StreamSubscription stateSubscription;
+  final ValueNotifier<double> volumeMusic = ValueNotifier(0.5);
+  double _volumeBeforeMute = 0.5;
+
+  Future<void> setVolume(double value) async {
+    final v = value.clamp(0.0, 1.0);
+    volumeMusic.value = v;
+    if (v > 0) _volumeBeforeMute = v;
+    await playerMusic.setVolume(v);
+  }
+
+  Future<void> toggleMute() => setVolume(volumeMusic.value > 0 ? 0 : _volumeBeforeMute);
 
   Future<void> playMusic(String path) async {
     try {
       if (currentTrack.value != path) {
         await playerMusic.setFilePath(path);
         currentTrack.value = path;
-        final wf = await _extractWaveform(path);
-        if (wf != null) {
-          waveformsMusic.value = wf;
+
+        if (!Platform.isWindows) {
+          final wf = await _extractWaveform(path);
+          if (wf != null) waveformsMusic.value = wf;
         }
         await playerMusic.seek(Duration.zero);
       }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:dynamic_lake_macos/models/size_window_object.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
@@ -75,11 +76,13 @@ class MainAppController extends ChangeNotifier {
   }
 
   MainAppController() {
-    battery = Battery();
-    _sub = Stream.periodic(const Duration(seconds: 1)).listen((_) async {
-      final level = await battery.batteryLevel;
-      batteryLevel.value = level;
-    });
+    if (Platform.isMacOS) {
+      battery = Battery();
+      _sub = Stream.periodic(const Duration(seconds: 1)).listen((_) async {
+        final level = await battery.batteryLevel;
+        batteryLevel.value = level;
+      });
+    }
   }
 
   @override

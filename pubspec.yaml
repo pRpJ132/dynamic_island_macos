@@ -52,6 +52,8 @@ dependencies:
   path: ^1.9.1
   rxdart: ^0.28.0
   image: ^4.8.0
+  just_audio_media_kit: ^2.1.0
+  media_kit_libs_windows_audio: ^1.0.9
 
 dev_dependencies:
   flutter_test:

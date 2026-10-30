@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_waveform/just_waveform.dart';
@@ -141,22 +143,24 @@ class _ExpandedView extends StatelessWidget {
                   spacing: 2,
                   crossAxisAlignment: .end,
                   children: [
-                    Flexible(
-                      child: ValueListenableBuilder(
-                        valueListenable: musicService.waveformsMusic,
-                        builder: (_, waveformValue, _) {
-                          return SizedBox(
-                            width: 39,
-                            height: 17,
-                            child: WaveformAnimated(
-                              player: player,
-                              waveformValue: waveformValue, 
-                              isPlaying: musicService.isPlayingMusic,
-                            ),
-                          );
-                        },
+                    if (Platform.isMacOS)
+                      Flexible(
+                        child: ValueListenableBuilder(
+                          valueListenable: musicService.waveformsMusic,
+                          builder: (_, waveformValue, _) {
+                            return SizedBox(
+                              width: 39,
+                              height: 17,
+                              child: WaveformAnimated(
+                                player: player,
+                                waveformValue: waveformValue, 
+                                isPlaying: musicService.isPlayingMusic,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
+                    Flexible(child: VolumeControl(service: musicService)),
                     Flexible(
                       child: Row(
                         children: [
@@ -271,6 +275,67 @@ class _CollapsedView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class VolumeControl extends StatelessWidget {
+  final MusicService service;
+  const VolumeControl({super.key, required this.service});
+
+  IconData _icon(double v) {
+    if (v == 0) return Icons.volume_off;
+    if (v < 0.5) return Icons.volume_down;
+    return Icons.volume_up;
+  }
+
+  double _sizeIcon(double v) {
+    if (v == 0) return 14.6;
+    if (v < 0.5) return 16.5;
+    return 14.6;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<double>(
+      valueListenable: service.volumeMusic,
+      builder: (_, volume, _) {
+        return Listener(
+          onPointerSignal: (event) {
+            if (event is PointerScrollEvent) {
+              final delta = event.scrollDelta.dy > 0 ? -0.05 : 0.05;
+              service.setVolume(volume + delta);
+            }
+          },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              InkWell(
+                onTap: service.toggleMute,
+                child: Icon(_icon(volume), color: Colors.white, size: _sizeIcon(volume)),
+              ),
+              SizedBox(
+                width: 110,
+                child: SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2,
+                    thumbShape:
+                        const RoundSliderThumbShape(enabledThumbRadius: 5),
+                    overlayShape: SliderComponentShape.noOverlay,
+                    activeTrackColor: Colors.white,
+                    inactiveTrackColor: Colors.white24,
+                    thumbColor: Colors.white,
+                  ),
+                  child: Slider(
+                    value: volume,
+                    onChanged: service.setVolume,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

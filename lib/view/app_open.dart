@@ -1,9 +1,10 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:dynamic_lake_macos/service/app_service.dart';
-import 'package:dynamic_lake_macos/view/service/icon_repository.dart';
+import 'package:dynamic_lake_macos/service/icon_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 
@@ -62,7 +63,17 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
   }
 
   String getAppName(String path) {
-    return path.split('/').last.replaceAll('.app', '');
+    return p.basenameWithoutExtension(path);
+  }
+
+  Future<void> openApp(String appPath) async {
+    if (Platform.isMacOS) {
+      await Process.run('open', [appPath]);
+    } else if (Platform.isWindows) {
+      await Process.run('cmd', ['/c', 'start', '', appPath]);
+    } else if (Platform.isLinux) {
+      await Process.run('xdg-open', [appPath]);
+    }
   }
 
   @override
@@ -114,7 +125,7 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
                                   final appPath = apps[index];
                                   final appName = getAppName(appPath);
                                   return GestureDetector(
-                                    onTap: () => Process.run('open', [appPath]),
+                                    onTap: () => openApp(appPath),
                                     onSecondaryTap: () {
                                       appServiceValue.removeApp(appPath);
                                     },
