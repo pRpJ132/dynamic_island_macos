@@ -13,15 +13,22 @@ class AppService extends ChangeNotifier {
   }
 
   Future<void> loadApp() async {
-    final prefs = await SharedPreferences.getInstance();
-    final list = prefs.getStringList(_key) ?? [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = prefs.getStringList(_key) ?? [];
 
-    _appPaths
-      ..clear()
-      ..addAll(list);
+      _appPaths
+        ..clear()
+        ..addAll(list);
 
-    notifyListeners();
+      notifyListeners();
+    } catch (e) {
+      print('Ошибка при загрузке SharedPreferences: $e');
+      _appPaths.clear(); 
+      notifyListeners();
+    }
   }
+
 
   Future<void> addApp(String path) async {
     if (_appPaths.contains(path)) return;

@@ -214,20 +214,21 @@ class _CollapsedView extends StatelessWidget {
               : MainAxisAlignment.center,
           children: [
             const SizedBox(width: 5),
-            ValueListenableBuilder(
-              valueListenable: musicService.waveformsMusic,
-              builder: (_, waveformValue, _) {
-                return SizedBox(
-                  width: 39,
-                  height: 17,
-                  child: WaveformAnimated(
-                    player: player,
-                    waveformValue: waveformValue, 
-                    isPlaying: musicService.isPlayingMusic,
-                  ),
-                );
-              },
-            ),
+            if (Platform.isMacOS)
+              ValueListenableBuilder(
+                valueListenable: musicService.waveformsMusic,
+                builder: (_, waveformValue, _) {
+                  return SizedBox(
+                    width: 39,
+                    height: 17,
+                    child: WaveformAnimated(
+                      player: player,
+                      waveformValue: waveformValue, 
+                      isPlaying: musicService.isPlayingMusic,
+                    ),
+                  );
+                },
+              ),
             const SizedBox(width: 9),
             Text(
               '${service.music.length}',
@@ -273,25 +274,29 @@ class VolumeControl extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              InkWell(
-                onTap: service.toggleMute,
-                child: Icon(_icon(volume), color: Colors.white, size: _sizeIcon(volume)),
+              Flexible(
+                child: InkWell(
+                  onTap: service.toggleMute,
+                  child: Icon(_icon(volume), color: Colors.white, size: _sizeIcon(volume)),
+                ),
               ),
-              SizedBox(
-                width: 110,
-                child: SliderTheme(
-                  data: SliderTheme.of(context).copyWith(
-                    trackHeight: 2,
-                    thumbShape:
-                        const RoundSliderThumbShape(enabledThumbRadius: 5),
-                    overlayShape: SliderComponentShape.noOverlay,
-                    activeTrackColor: Colors.white,
-                    inactiveTrackColor: Colors.white24,
-                    thumbColor: Colors.white,
-                  ),
-                  child: Slider(
-                    value: volume,
-                    onChanged: service.setVolume,
+              Flexible(
+                child: SizedBox(
+                  width: 110,
+                  child: SliderTheme(
+                    data: SliderTheme.of(context).copyWith(
+                      trackHeight: 2,
+                      thumbShape:
+                          const RoundSliderThumbShape(enabledThumbRadius: 5),
+                      overlayShape: SliderComponentShape.noOverlay,
+                      activeTrackColor: Colors.white,
+                      inactiveTrackColor: Colors.white24,
+                      thumbColor: Colors.white,
+                    ),
+                    child: Slider(
+                      value: volume,
+                      onChanged: service.setVolume,
+                    ),
                   ),
                 ),
               ),

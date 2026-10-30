@@ -223,9 +223,7 @@ class _DynamicIslandMainState extends State<DynamicIslandMain> {
                 appService.addApp(file.path);
               } else if (Platform.isWindows &&
                   (name.endsWith('.exe') || name.endsWith('.lnk') || name.endsWith('.url'))) {
-                final path = name.endsWith('.url')
-                    ? file.path
-                    : await IconService().resolveAppPath(file.path);
+                String path = name.endsWith('.url') ? file.path : await IconService().resolveAppPath(file.path);
                 appService.addApp(path);
               }
             }
