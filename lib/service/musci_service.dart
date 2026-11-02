@@ -326,7 +326,7 @@ class MusicService extends ChangeNotifier {
     _orderPos = _order.indexOf(index);
     try {
       await _loadTrack(_queue[index]);
-      await playerMusic.play();
+      playerMusic.play();
     } catch (e) {
       debugPrint('Audio error: $e');
       if (attempts < _queue.length) {
@@ -384,7 +384,7 @@ class MusicService extends ChangeNotifier {
         _rebuildOrder();
         await _loadTrack(path);
       }
-      await playerMusic.play();
+      playerMusic.play();
       statusMusic.value = StatusMusic.play;
       notifyListeners();
     } catch (e) {
