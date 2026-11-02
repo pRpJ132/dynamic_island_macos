@@ -113,7 +113,7 @@ class MainAppController extends ChangeNotifier {
   MainAppController() {
     if (Platform.isMacOS) {
       battery = Battery();
-      _sub = Stream.periodic(const Duration(seconds: 1)).listen((_) async {
+      _sub = Stream.periodic(const Duration(seconds: 2)).listen((_) async {
         final level = await battery.batteryLevel;
         batteryLevel.value = level;
       });

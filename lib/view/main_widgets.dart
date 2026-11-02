@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:dynamic_lake_macos/controller/main_app_controller.dart';
 import 'package:dynamic_lake_macos/service/musci_service.dart';
 import 'package:dynamic_lake_macos/view/music_screen/music.dart';
@@ -60,26 +61,25 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
               duration: const Duration(milliseconds: 450),
               curve: Curves.easeOut,
               padding: EdgeInsets.only(top: mainAppController.isDynamicIsland ? 0 : 8.0),
-              child: ValueListenableBuilder<int?>(
-                valueListenable: mainAppController.batteryLevel,
-                builder: (_, level, _) {
-                  return level != null ? Row(
-                    mainAxisSize: .min,
-                    crossAxisAlignment: .start,
-                    mainAxisAlignment: .end,
-                    spacing: 5,
-                    children: [
-                      Flexible(
-                        child: BatteryIcon(
-                          height: 14.4,
-                          width: 26,
-                          border: 3,
-                          level: level,
-                          mainAppController: null,
-                        ),
-                      ),
-                  
-                      Flexible(
+              child: Platform.isMacOS ? Row(
+                mainAxisSize: .min,
+                crossAxisAlignment: .start,
+                mainAxisAlignment: .end,
+                spacing: 5,
+                children: [
+                  Flexible(
+                    child: BatteryIcon(
+                      height: 14.4,
+                      width: 26,
+                      border: 3,
+                      mainAppController: mainAppController,
+                    ),
+                  ),
+              
+                  ValueListenableBuilder<int?>(
+                    valueListenable: mainAppController.batteryLevel,
+                    builder: (_, level, _) {
+                      return Flexible(
                         child: Text(
                           '$level%',
                           maxLines: 1,
@@ -90,11 +90,11 @@ class _DynamicIslandMainWidgetsState extends State<DynamicIslandMainWidgets> {
                             overflow: TextOverflow.ellipsis
                           ),
                         ),
-                      ),
-                    ],
-                  ) : SizedBox.expand();
-                }
-              ),
+                      );
+                    }
+                  ),
+                ],
+              ) : SizedBox.expand()
             ),
             Consumer<MusicService>(
               builder: (_, musicService, _) {

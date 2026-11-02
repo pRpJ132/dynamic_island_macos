@@ -114,8 +114,8 @@ class _DynamicIslandAppOpenState extends State<DynamicIslandAppOpen> {
                           child: AnimatedContainer(
                             height: mainAppController.isExpanded ? _itemWidth + 50 : _itemWidth,
                             width: 290,
-                            duration: const Duration(milliseconds: 500),
-                            curve: Curves.easeOut,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.ease,
                             child: ListView.builder(
                                 physics: const NeverScrollableScrollPhysics(),
                                 controller: _scrollController,
